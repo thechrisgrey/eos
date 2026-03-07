@@ -66,7 +66,7 @@ export function useAgentRouter() {
       if (!res.ok) throw new Error(`API error: ${res.status}`);
 
       const data: RouteAgentResponse = await res.json();
-      const { sector, reason, systemPrompt, userPrompt, rawOutput, temperature: usedTemp, latencyMs } = data;
+      const { sector, reason, systemPrompt, turn1Prompt, turn1Response, turn2Prompt, turn2Response, temperature: usedTemp, latencyMs } = data;
 
       const sectorDef = SECTORS.find((s) => s.id === sector);
       if (!sectorDef || !svgRef.current) throw new Error('Missing sector or SVG ref');
@@ -90,7 +90,7 @@ export function useAgentRouter() {
       };
 
       setFlying((prev) => [...prev, flyingNode]);
-      const inferenceResult = { systemPrompt, userPrompt, rawOutput, temperature: usedTemp, latencyMs };
+      const inferenceResult = { systemPrompt, turn1Prompt, turn1Response, turn2Prompt, turn2Response, temperature: usedTemp, latencyMs };
       setAgents((prev) =>
         prev.map((a) =>
           a.id === id

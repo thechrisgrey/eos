@@ -11,7 +11,10 @@ interface InferenceConfigPanelProps {
   onTemperatureChange: (t: number) => void;
 }
 
-const USER_PROMPT = `The 6 EOS components and what they govern:
+const SYSTEM_PROMPT = `You are an AI agent self-routing into an EOS (Entrepreneurial Operating System) business framework wheel.
+Assess your own default capabilities honestly and navigate to the single component where you would have the greatest real-world impact.`;
+
+const TURN1_PROMPT = `The 6 EOS components and what they govern:
 
 - vision: Strategic direction, core values, long-term targets, V/TO, ensuring 100% organizational alignment
 - data: KPI scorecards, activity measurables, removing subjectivity, data-driven decision culture
@@ -20,13 +23,12 @@ const USER_PROMPT = `The 6 EOS components and what they govern:
 - issues: IDS methodology -- permanently identifying, discussing, and solving root-cause organizational problems
 - people: Right people in right seats, culture-values alignment, role fit, team health
 
-Where do you belong? Respond with exactly:
+Analyze each component. For each one, briefly assess how well your capabilities align with what it demands. Think step by step.`;
+
+const TURN2_PROMPT = `Based on your analysis above, commit to the single EOS component where you would have the greatest real-world impact.
+
+Respond ONLY with valid JSON. No markdown. No explanation. No preamble.
 {"sector":"<one of the six ids above>","reason":"<one sentence>"}`;
-
-const SYSTEM_PROMPT = `You are an AI agent self-routing into an EOS (Entrepreneurial Operating System) business framework wheel.
-Assess your own default capabilities honestly and navigate to the single component where you would have the greatest real-world impact.
-
-Respond ONLY with valid JSON. No markdown. No explanation. No preamble.`;
 
 const Container = styled.div`
   flex: 1 1 200px;
@@ -222,8 +224,8 @@ const InferenceConfigPanel: React.FC<InferenceConfigPanelProps> = ({
             {selected.inference?.systemPrompt ?? SYSTEM_PROMPT}
           </PromptBlock>
 
-          <SectionLabel>USER PROMPT</SectionLabel>
-          <PromptBlock>{selected.inference?.userPrompt ?? USER_PROMPT}</PromptBlock>
+          <SectionLabel>TURN 1 -- ANALYZE</SectionLabel>
+          <PromptBlock>{selected.inference?.turn1Prompt ?? TURN1_PROMPT}</PromptBlock>
 
           <SectionLabel>TEMPERATURE</SectionLabel>
           <TempRow>
@@ -250,9 +252,23 @@ const InferenceConfigPanel: React.FC<InferenceConfigPanelProps> = ({
               </MetaRow>
 
               <RawDetails>
-                <summary>RAW MODEL OUTPUT</summary>
+                <summary>TURN 1 -- CHAIN OF THOUGHT</summary>
                 <PromptBlock style={{ marginTop: 6 }}>
-                  {selected.inference.rawOutput}
+                  {selected.inference.turn1Response}
+                </PromptBlock>
+              </RawDetails>
+
+              <RawDetails>
+                <summary>TURN 2 -- DECISION PROMPT</summary>
+                <PromptBlock style={{ marginTop: 6 }}>
+                  {selected.inference.turn2Prompt}
+                </PromptBlock>
+              </RawDetails>
+
+              <RawDetails>
+                <summary>TURN 2 -- RAW OUTPUT</summary>
+                <PromptBlock style={{ marginTop: 6 }}>
+                  {selected.inference.turn2Response}
                 </PromptBlock>
               </RawDetails>
             </>

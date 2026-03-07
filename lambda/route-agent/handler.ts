@@ -27,8 +27,10 @@ interface RouteSuccess {
   sector: Sector;
   reason: string;
   systemPrompt: string;
-  userPrompt: string;
-  rawOutput: string;
+  turn1Prompt: string;
+  turn1Response: string;
+  turn2Prompt: string;
+  turn2Response: string;
   temperature: number;
   latencyMs: number;
 }
@@ -48,11 +50,9 @@ const CORS_HEADERS = {
 const client = new BedrockRuntimeClient({ region: "us-east-1" });
 
 const SYSTEM_PROMPT = `You are an AI agent self-routing into an EOS (Entrepreneurial Operating System) business framework wheel.
-Assess your own default capabilities honestly and navigate to the single component where you would have the greatest real-world impact.
+Assess your own default capabilities honestly and navigate to the single component where you would have the greatest real-world impact.`;
 
-Respond ONLY with valid JSON. No markdown. No explanation. No preamble.`;
-
-const USER_PROMPT = `The 6 EOS components and what they govern:
+const TURN1_PROMPT = `The 6 EOS components and what they govern:
 
 - vision: Strategic direction, core values, long-term targets, V/TO, ensuring 100% organizational alignment
 - data: KPI scorecards, activity measurables, removing subjectivity, data-driven decision culture
@@ -61,7 +61,11 @@ const USER_PROMPT = `The 6 EOS components and what they govern:
 - issues: IDS methodology -- permanently identifying, discussing, and solving root-cause organizational problems
 - people: Right people in right seats, culture-values alignment, role fit, team health
 
-Where do you belong? Respond with exactly:
+Analyze each component. For each one, briefly assess how well your capabilities align with what it demands. Think step by step.`;
+
+const TURN2_PROMPT = `Based on your analysis above, commit to the single EOS component where you would have the greatest real-world impact.
+
+Respond ONLY with valid JSON. No markdown. No explanation. No preamble.
 {"sector":"<one of the six ids above>","reason":"<one sentence>"}`;
 
 function stripMarkdownFences(text: string): string {
@@ -113,29 +117,37 @@ export async function handler(event: {
       };
     }
 
-    const command = new ConverseCommand({
+    const inferenceConfig = { maxTokens: 1200, temperature };
+
+    // Turn 1: chain-of-thought analysis
+    const startMs = Date.now();
+    const turn1 = await client.send(new ConverseCommand({
       modelId,
       messages: [
-        {
-          role: "user",
-          content: [{ text: USER_PROMPT }],
-        },
+        { role: "user", content: [{ text: TURN1_PROMPT }] },
       ],
       system: [{ text: SYSTEM_PROMPT }],
-      inferenceConfig: {
-        maxTokens: 600,
-        temperature,
-      },
-    });
+      inferenceConfig,
+    }));
 
-    const startMs = Date.now();
-    const response = await client.send(command);
+    const turn1Text = turn1.output?.message?.content?.[0]?.text ?? "";
+
+    // Turn 2: commit to a decision using the analysis as context
+    const turn2 = await client.send(new ConverseCommand({
+      modelId,
+      messages: [
+        { role: "user", content: [{ text: TURN1_PROMPT }] },
+        { role: "assistant", content: [{ text: turn1Text }] },
+        { role: "user", content: [{ text: TURN2_PROMPT }] },
+      ],
+      system: [{ text: SYSTEM_PROMPT }],
+      inferenceConfig: { maxTokens: 200, temperature },
+    }));
+
     const latencyMs = Date.now() - startMs;
+    const turn2Text = turn2.output?.message?.content?.[0]?.text ?? "";
 
-    const outputText =
-      response.output?.message?.content?.[0]?.text ?? "";
-
-    const cleaned = stripMarkdownFences(outputText);
+    const cleaned = stripMarkdownFences(turn2Text);
 
     let parsed: { sector?: string; reason?: string };
     try {
@@ -164,8 +176,10 @@ export async function handler(event: {
       sector: parsed.sector,
       reason: parsed.reason ?? "No reason provided",
       systemPrompt: SYSTEM_PROMPT,
-      userPrompt: USER_PROMPT,
-      rawOutput: outputText,
+      turn1Prompt: TURN1_PROMPT,
+      turn1Response: turn1Text,
+      turn2Prompt: TURN2_PROMPT,
+      turn2Response: turn2Text,
       temperature,
       latencyMs,
     };

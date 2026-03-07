@@ -27,8 +27,10 @@ export interface Agent {
 
 export interface AgentInferenceResult {
   systemPrompt: string;
-  userPrompt: string;
-  rawOutput: string;
+  turn1Prompt: string;
+  turn1Response: string;
+  turn2Prompt: string;
+  turn2Response: string;
   temperature: number;
   latencyMs: number;
 }
@@ -53,8 +55,10 @@ export interface RouteAgentResponse {
   sector: SectorId;
   reason: string;
   systemPrompt: string;
-  userPrompt: string;
-  rawOutput: string;
+  turn1Prompt: string;
+  turn1Response: string;
+  turn2Prompt: string;
+  turn2Response: string;
   temperature: number;
   latencyMs: number;
 }
