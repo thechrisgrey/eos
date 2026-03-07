@@ -130,7 +130,7 @@ export async function handler(event: {
       system: [{ text: systemPrompt }],
       inferenceConfig: {
         maxTokens: 600,
-        temperature: 0.2,
+        temperature: 0,
       },
     });
 
