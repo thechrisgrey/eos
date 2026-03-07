@@ -1,0 +1,5 @@
+{
+  "name": "eos-agents",
+  "private": true,
+  "workspaces": ["frontend", "infra", "lambda/route-agent"]
+}
