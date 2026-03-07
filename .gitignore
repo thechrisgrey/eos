@@ -4,5 +4,6 @@ cdk.out/
 .env
 *.js.map
 *.d.ts
+*.tsbuildinfo
 !vite.config.ts
 .vite/
