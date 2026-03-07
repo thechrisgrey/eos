@@ -47,20 +47,10 @@ const CORS_HEADERS = {
 
 const client = new BedrockRuntimeClient({ region: "us-east-1" });
 
-function buildSystemPrompt(
-  agentName: string,
-  agentProvider: string,
-  capability: string,
-): string {
-  return `You are ${agentName} by ${agentProvider}.
-
-Your capabilities: ${capability}
-
-You are an AI agent self-routing into an EOS (Entrepreneurial Operating System) business framework wheel.
+const SYSTEM_PROMPT = `You are an AI agent self-routing into an EOS (Entrepreneurial Operating System) business framework wheel.
 Assess your own default capabilities honestly and navigate to the single component where you would have the greatest real-world impact.
 
 Respond ONLY with valid JSON. No markdown. No explanation. No preamble.`;
-}
 
 const USER_PROMPT = `The 6 EOS components and what they govern:
 
@@ -110,21 +100,18 @@ export async function handler(event: {
       typeof event.body === "string" ? event.body : JSON.stringify(event.body);
     const request: RouteRequest = JSON.parse(rawBody ?? "{}");
 
-    const { agentName, agentProvider, capability, modelId, temperature: reqTemp } = request;
+    const { modelId, temperature: reqTemp } = request;
     const temperature = typeof reqTemp === 'number' ? Math.max(0, Math.min(1, reqTemp)) : 0;
 
-    if (!agentName || !agentProvider || !capability || !modelId) {
+    if (!modelId) {
       return {
         statusCode: 400,
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
         body: JSON.stringify({
-          error:
-            "Missing required fields: agentName, agentProvider, capability, modelId",
+          error: "Missing required field: modelId",
         } satisfies RouteError),
       };
     }
-
-    const systemPrompt = buildSystemPrompt(agentName, agentProvider, capability);
 
     const command = new ConverseCommand({
       modelId,
@@ -134,7 +121,7 @@ export async function handler(event: {
           content: [{ text: USER_PROMPT }],
         },
       ],
-      system: [{ text: systemPrompt }],
+      system: [{ text: SYSTEM_PROMPT }],
       inferenceConfig: {
         maxTokens: 600,
         temperature,
@@ -176,7 +163,7 @@ export async function handler(event: {
     const result: RouteSuccess = {
       sector: parsed.sector,
       reason: parsed.reason ?? "No reason provided",
-      systemPrompt,
+      systemPrompt: SYSTEM_PROMPT,
       userPrompt: USER_PROMPT,
       rawOutput: outputText,
       temperature,

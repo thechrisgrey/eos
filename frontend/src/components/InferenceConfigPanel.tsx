@@ -23,9 +23,10 @@ const USER_PROMPT = `The 6 EOS components and what they govern:
 Where do you belong? Respond with exactly:
 {"sector":"<one of the six ids above>","reason":"<one sentence>"}`;
 
-function buildSystemPrompt(name: string, provider: string, capability: string): string {
-  return `You are ${name} by ${provider}.\n\nYour capabilities: ${capability}\n\nYou are an AI agent self-routing into an EOS (Entrepreneurial Operating System) business framework wheel.\nAssess your own default capabilities honestly and navigate to the single component where you would have the greatest real-world impact.\n\nRespond ONLY with valid JSON. No markdown. No explanation. No preamble.`;
-}
+const SYSTEM_PROMPT = `You are an AI agent self-routing into an EOS (Entrepreneurial Operating System) business framework wheel.
+Assess your own default capabilities honestly and navigate to the single component where you would have the greatest real-world impact.
+
+Respond ONLY with valid JSON. No markdown. No explanation. No preamble.`;
 
 const Container = styled.div`
   flex: 1 1 200px;
@@ -218,8 +219,7 @@ const InferenceConfigPanel: React.FC<InferenceConfigPanelProps> = ({
         <>
           <SectionLabel>SYSTEM PROMPT</SectionLabel>
           <PromptBlock>
-            {selected.inference?.systemPrompt ??
-              buildSystemPrompt(selected.name, selected.provider, selected.capability)}
+            {selected.inference?.systemPrompt ?? SYSTEM_PROMPT}
           </PromptBlock>
 
           <SectionLabel>USER PROMPT</SectionLabel>
