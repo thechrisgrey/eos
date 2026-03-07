@@ -1,0 +1,16 @@
+export const theme = {
+  bg: '#06060a',
+  accent: '#ea580c',
+  accentHover: '#f97316',
+  text: '#e0e0e0',
+  textDim: '#444',
+  textMuted: '#666',
+  textDark: '#333',
+  textDarker: '#2a2a2a',
+  textDarkest: '#2e2e2e',
+  border: 'rgba(255,255,255,0.055)',
+  borderDim: 'rgba(255,255,255,0.04)',
+  panelBg: 'rgba(255,255,255,0.018)',
+  fontMono: "'Space Mono', monospace",
+  fontDisplay: "'Barlow Condensed', sans-serif",
+} as const;
