@@ -9,6 +9,7 @@ import DecisionLog from './components/DecisionLog';
 import GateDivider from './components/GateDivider';
 import SectorTooltip from './components/SectorTooltip';
 import InferenceConfigPanel from './components/InferenceConfigPanel';
+import WelcomeModal from './components/WelcomeModal';
 import { SectorId, AgentId } from './types';
 
 const PageContainer = styled.div`
@@ -125,6 +126,7 @@ export default function App() {
 
   return (
     <PageContainer>
+      <WelcomeModal />
       <AmbientGradient />
       <DotGrid />
 
