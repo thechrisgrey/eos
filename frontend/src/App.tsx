@@ -9,6 +9,7 @@ import DecisionLog from './components/DecisionLog';
 import GateDivider from './components/GateDivider';
 import SectorTooltip from './components/SectorTooltip';
 import InferenceConfigPanel from './components/InferenceConfigPanel';
+import InferenceModal from './components/InferenceModal';
 import WelcomeModal from './components/WelcomeModal';
 import { SectorId, AgentId } from './types';
 
@@ -122,6 +123,8 @@ export default function App() {
     setTemperature,
     selectedIds,
     toggleModel,
+    inferenceModal,
+    skipModal,
   } = useAgentRouter();
 
   return (
@@ -176,6 +179,10 @@ export default function App() {
       {flying.map((n) => (
         <FlyingNode key={n.id} node={n} />
       ))}
+
+      {inferenceModal && (
+        <InferenceModal state={inferenceModal} onSkip={skipModal} />
+      )}
     </PageContainer>
   );
 }

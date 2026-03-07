@@ -51,6 +51,8 @@ export interface RouteAgentRequest {
   capability: string;
   modelId: string;
   temperature: number;
+  turn?: 1 | 2;
+  turn1Response?: string;
 }
 
 export interface RouteAgentResponse {
@@ -65,8 +67,49 @@ export interface RouteAgentResponse {
   latencyMs: number;
 }
 
+export interface Turn1Response {
+  systemPrompt: string;
+  turn1Prompt: string;
+  turn1Response: string;
+  temperature: number;
+  latencyMs: number;
+}
+
+export interface Turn2Response {
+  turn2Prompt: string;
+  turn2Response: string;
+  sector: SectorId;
+  reason: string;
+  latencyMs: number;
+}
+
 export interface RouteAgentError {
   error: string;
+}
+
+export type InferenceStep =
+  | 'init'
+  | 'turn1-sending'
+  | 'turn1-received'
+  | 'turn2-sending'
+  | 'turn2-received'
+  | 'routing'
+  | 'error';
+
+export interface InferenceModalState {
+  agentId: string;
+  agent: ModelEntry;
+  step: InferenceStep;
+  systemPrompt?: string;
+  turn1Prompt?: string;
+  turn1Response?: string;
+  turn2Prompt?: string;
+  turn2Response?: string;
+  sector?: SectorId;
+  reason?: string;
+  error?: string;
+  turn1LatencyMs?: number;
+  turn2LatencyMs?: number;
 }
 
 export interface DecisionLogEntry {
