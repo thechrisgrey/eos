@@ -84,7 +84,6 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
               }}
             />
 
-            {/* Main label */}
             <text
               x={lx}
               y={ly - 12}
@@ -94,14 +93,13 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
                 fontWeight: 700,
                 fontFamily: "'Barlow Condensed', sans-serif",
                 letterSpacing: 2,
-                fill: 'white',
+                fill: 'rgba(255,255,255,0.95)',
                 pointerEvents: 'none',
               }}
             >
               {sector.label}
             </text>
 
-            {/* Sub labels */}
             {sector.sub.map((s, i) => (
               <text
                 key={i}
@@ -111,7 +109,7 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
                 style={{
                   fontSize: 8.5,
                   fontFamily: "'Space Mono', monospace",
-                  fill: 'rgba(255,255,255,0.68)',
+                  fill: 'rgba(255,255,255,0.6)',
                   pointerEvents: 'none',
                 }}
               >
@@ -119,7 +117,6 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
               </text>
             ))}
 
-            {/* Agent badges */}
             {sectorAgents.map((agent, index) => {
               const [bx, by] = badgePosition(
                 sector.centerAngle,
@@ -168,8 +165,8 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
         cx={CX}
         cy={CY}
         r={R1 - 5}
-        fill="#08080e"
-        stroke="#ea580c44"
+        fill="#06060a"
+        stroke="#ea580c33"
         strokeWidth={1.5}
       />
       <circle
@@ -177,7 +174,7 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
         cy={CY}
         r={R1 - 14}
         fill="none"
-        stroke="#ea580c22"
+        stroke="#ea580c1a"
         strokeWidth={1}
       />
       <text
@@ -190,7 +187,7 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
           fontWeight: 700,
           fontFamily: "'Barlow Condensed', sans-serif",
           letterSpacing: 2,
-          fill: '#d0d0d0',
+          fill: '#c0c0c0',
         }}
       >
         YOUR
@@ -205,7 +202,7 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
           fontWeight: 700,
           fontFamily: "'Barlow Condensed', sans-serif",
           letterSpacing: 2,
-          fill: '#d0d0d0',
+          fill: '#c0c0c0',
         }}
       >
         BUSINESS

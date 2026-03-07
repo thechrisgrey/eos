@@ -16,23 +16,23 @@ interface AgentPoolProps {
 const Container = styled.div`
   width: 100%;
   max-width: 1200px;
-  margin-top: 26px;
+  margin-top: 28px;
 `;
 
 const MicroLabel = styled.div`
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 5px;
-  color: ${theme.textDark};
+  color: ${theme.textDim};
   text-align: center;
   font-weight: 700;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
   font-family: ${theme.fontMono};
 `;
 
 const AgentRow = styled.div`
   display: flex;
   justify-content: center;
-  gap: 22px;
+  gap: 24px;
   flex-wrap: wrap;
 `;
 
@@ -42,7 +42,7 @@ const AgentNode = styled.div<{ $idle: boolean; $settled: boolean }>`
   align-items: center;
   gap: 8px;
   opacity: ${(p) => (p.$settled ? 0.25 : 1)};
-  transition: opacity 0.6s;
+  transition: opacity 0.6s, transform 0.2s;
   cursor: ${(p) => (p.$idle ? 'pointer' : 'default')};
 
   &:hover {
@@ -115,13 +115,13 @@ const MainCircle = styled.div<{
 const AgentName = styled.div<{ $color: string; $idle: boolean }>`
   font-size: 10px;
   font-weight: 700;
-  color: ${(p) => (p.$idle ? p.$color : theme.textDark)};
+  color: ${(p) => (p.$idle ? p.$color : theme.textDim)};
   font-family: ${theme.fontMono};
 `;
 
 const AgentStatus = styled.div`
-  font-size: 8px;
-  color: ${theme.textDarkest};
+  font-size: 9px;
+  color: ${theme.textDim};
   letter-spacing: 1px;
   font-family: ${theme.fontMono};
 `;
@@ -129,12 +129,12 @@ const AgentStatus = styled.div`
 const ButtonRow = styled.div`
   display: flex;
   justify-content: center;
-  gap: 12px;
-  margin-top: 30px;
+  gap: 14px;
+  margin-top: 32px;
 `;
 
 const DeployButton = styled.button<{ $active: boolean }>`
-  padding: 12px 30px;
+  padding: 12px 32px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
@@ -144,8 +144,8 @@ const DeployButton = styled.button<{ $active: boolean }>`
   transition: all 0.2s;
 
   background: ${(p) => (p.$active ? theme.accent : 'transparent')};
-  border: 1px solid ${(p) => (p.$active ? theme.accent : '#222')};
-  color: ${(p) => (p.$active ? '#fff' : theme.textDark)};
+  border: 1px solid ${(p) => (p.$active ? theme.accent : theme.border)};
+  color: ${(p) => (p.$active ? '#fff' : theme.textDim)};
 
   &:hover {
     ${(p) =>
@@ -153,15 +153,15 @@ const DeployButton = styled.button<{ $active: boolean }>`
       `
       background: ${theme.accentHover};
       transform: translateY(-1px);
-      box-shadow: 0 4px 20px rgba(249,115,22,0.4);
+      box-shadow: 0 4px 20px rgba(249,115,22,0.35);
     `}
   }
 `;
 
 const ResetButton = styled.button`
-  padding: 12px 30px;
+  padding: 12px 32px;
   background: transparent;
-  border: 1px solid #1e1e1e;
+  border: 1px solid ${theme.border};
   border-radius: 6px;
   color: ${theme.textDim};
   font-size: 11px;
@@ -172,8 +172,8 @@ const ResetButton = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    border-color: #555;
-    color: #bbb;
+    border-color: ${theme.textDim};
+    color: ${theme.textSoft};
   }
 `;
 

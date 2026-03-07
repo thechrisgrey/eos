@@ -13,13 +13,13 @@ const Tooltip = styled.div`
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(6, 6, 10, 0.97);
-  border: 1px solid rgba(234, 88, 12, 0.2);
+  background: rgba(6, 6, 10, 0.95);
+  border: 1px solid rgba(234, 88, 12, 0.18);
   border-radius: 8px;
-  padding: 10px 18px;
+  padding: 12px 20px;
   font-size: 11px;
-  color: #999;
-  max-width: 380px;
+  color: ${theme.textSoft};
+  max-width: 400px;
   z-index: 200;
   backdrop-filter: blur(14px);
   animation: fadein 0.15s ease;
@@ -36,7 +36,7 @@ const SectorName = styled.span`
   letter-spacing: 3px;
   font-size: 9px;
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   font-family: ${theme.fontMono};
 `;
 

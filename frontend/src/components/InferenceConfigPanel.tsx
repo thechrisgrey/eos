@@ -37,16 +37,16 @@ const Container = styled.div`
   background: ${theme.panelBg};
   border: 1px solid ${theme.border};
   border-radius: 12px;
-  padding: 18px 16px;
+  padding: 20px 18px;
   max-height: 460px;
   overflow-y: auto;
 `;
 
 const Header = styled.div`
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 5px;
   color: ${theme.accent};
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   font-weight: 700;
   font-family: ${theme.fontMono};
 `;
@@ -54,7 +54,7 @@ const Header = styled.div`
 const AgentSelector = styled.div`
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 `;
 
@@ -62,10 +62,10 @@ const AgentDot = styled.button<{ $color: string; $glow: string; $active: boolean
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: ${(p) => p.$active ? p.$color : `${p.$color}33`};
-  border: 2px solid ${(p) => p.$active ? p.$color : `${p.$color}55`};
-  box-shadow: ${(p) => p.$active ? `0 0 12px ${p.$glow}` : 'none'};
-  color: #fff;
+  background: ${(p) => p.$active ? p.$color : `${p.$color}22`};
+  border: 2px solid ${(p) => p.$active ? p.$color : `${p.$color}44`};
+  box-shadow: ${(p) => p.$active ? `0 0 14px ${p.$glow}` : 'none'};
+  color: ${(p) => p.$active ? '#fff' : `${p.$color}cc`};
   font-size: 11px;
   font-weight: 700;
   font-family: ${theme.fontMono};
@@ -77,33 +77,34 @@ const AgentDot = styled.button<{ $color: string; $glow: string; $active: boolean
 
   &:hover {
     background: ${(p) => p.$color};
-    box-shadow: 0 0 12px ${(p) => p.$glow};
+    box-shadow: 0 0 14px ${(p) => p.$glow};
+    color: #fff;
   }
 `;
 
 const SectionLabel = styled.div`
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 3px;
-  color: ${theme.textDark};
-  margin-bottom: 6px;
-  margin-top: 14px;
+  color: ${theme.textDim};
+  margin-bottom: 8px;
+  margin-top: 16px;
   font-weight: 700;
   font-family: ${theme.fontMono};
 `;
 
 const PromptBlock = styled.pre`
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.6;
   color: ${theme.textMuted};
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.35);
   border: 1px solid ${theme.borderDim};
   border-radius: 6px;
-  padding: 10px;
+  padding: 10px 12px;
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
   font-family: ${theme.fontMono};
-  max-height: 120px;
+  max-height: 140px;
   overflow-y: auto;
 `;
 
@@ -111,17 +112,18 @@ const TempRow = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 6px;
+  margin-top: 8px;
 `;
 
 const TempSlider = styled.input`
   flex: 1;
   accent-color: ${theme.accent};
   cursor: pointer;
+  height: 4px;
 `;
 
 const TempValue = styled.span`
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: ${theme.accent};
   font-family: ${theme.fontMono};
@@ -133,35 +135,36 @@ const MetaRow = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 8px;
 `;
 
 const MetaLabel = styled.span`
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 2px;
-  color: ${theme.textDark};
+  color: ${theme.textDim};
   font-weight: 700;
   font-family: ${theme.fontMono};
 `;
 
 const MetaValue = styled.span`
-  font-size: 10px;
-  color: ${theme.textMuted};
+  font-size: 11px;
+  color: ${theme.textSoft};
   font-family: ${theme.fontMono};
 `;
 
 const RawDetails = styled.details`
-  margin-top: 6px;
+  margin-top: 8px;
 
   & > summary {
-    font-size: 8px;
+    font-size: 9px;
     letter-spacing: 3px;
-    color: ${theme.textDark};
+    color: ${theme.textDim};
     font-weight: 700;
     font-family: ${theme.fontMono};
     cursor: pointer;
     user-select: none;
     list-style: none;
+    transition: color 0.2s;
 
     &::-webkit-details-marker {
       display: none;
@@ -171,6 +174,10 @@ const RawDetails = styled.details`
       content: '+ ';
       color: ${theme.accent};
     }
+
+    &:hover {
+      color: ${theme.textMuted};
+    }
   }
 
   &[open] > summary::before {
@@ -179,7 +186,7 @@ const RawDetails = styled.details`
 `;
 
 const EmptyState = styled.div`
-  color: ${theme.textDarker};
+  color: ${theme.textDim};
   font-size: 11px;
   line-height: 1.9;
   font-family: ${theme.fontMono};

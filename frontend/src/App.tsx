@@ -19,7 +19,7 @@ const PageContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 28px 16px 60px;
+  padding: 32px 20px 64px;
   position: relative;
   overflow: hidden;
 `;
@@ -28,11 +28,17 @@ const AmbientGradient = styled.div`
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(
-    ellipse 80% 55% at 50% -5%,
-    rgba(234, 88, 12, 0.09),
-    transparent 65%
-  );
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% -5%,
+      rgba(234, 88, 12, 0.07),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 50% 105%,
+      rgba(234, 88, 12, 0.03),
+      transparent 50%
+    );
 `;
 
 const DotGrid = styled.div`
@@ -40,7 +46,7 @@ const DotGrid = styled.div`
   inset: 0;
   pointer-events: none;
   background-image: radial-gradient(
-    rgba(255, 255, 255, 0.015) 1px,
+    rgba(255, 255, 255, 0.018) 1px,
     transparent 1px
   );
   background-size: 32px 32px;
@@ -50,16 +56,16 @@ const Header = styled.div`
   position: relative;
   z-index: 1;
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 36px;
 `;
 
 const MicroLabel = styled.div`
   font-size: 9px;
   letter-spacing: 6px;
   color: ${theme.accent};
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-weight: 700;
-  opacity: 0.9;
+  opacity: 0.85;
 `;
 
 const Title = styled.h1`
@@ -78,8 +84,8 @@ const OrangeSpan = styled.span`
 
 const Subtitle = styled.div`
   font-size: 10px;
-  color: ${theme.textDim};
-  margin-top: 10px;
+  color: ${theme.textMuted};
+  margin-top: 12px;
   letter-spacing: 2px;
   line-height: 1.8;
 `;

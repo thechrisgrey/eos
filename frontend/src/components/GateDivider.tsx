@@ -8,8 +8,8 @@ interface GateDividerProps {
 
 const Container = styled.div`
   width: 100%;
-  max-width: 900px;
-  margin: 30px 0 0;
+  max-width: 1200px;
+  margin: 32px 0 0;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -20,7 +20,7 @@ const Line = styled.div<{ $open: boolean }>`
   height: 1px;
   position: relative;
   background: ${(p) =>
-    p.$open ? 'rgba(234,88,12,0.15)' : 'rgba(234,88,12,0.65)'};
+    p.$open ? 'rgba(234,88,12,0.12)' : 'rgba(234,88,12,0.55)'};
   transition: background 1.2s ease;
 `;
 
@@ -38,7 +38,7 @@ const PulseOverlay = styled.div`
 
 const CenterLabel = styled.span<{ $open: boolean }>`
   flex-shrink: 0;
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 4px;
   font-weight: 700;
   font-family: ${theme.fontMono};

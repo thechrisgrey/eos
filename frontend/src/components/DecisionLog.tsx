@@ -14,22 +14,22 @@ const Container = styled.div`
   background: ${theme.panelBg};
   border: 1px solid ${theme.border};
   border-radius: 12px;
-  padding: 18px 16px;
+  padding: 20px 18px;
   max-height: 460px;
   overflow-y: auto;
 `;
 
 const Header = styled.div`
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 5px;
   color: ${theme.accent};
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   font-weight: 700;
   font-family: ${theme.fontMono};
 `;
 
 const EmptyState = styled.div`
-  color: ${theme.textDarker};
+  color: ${theme.textDim};
   font-size: 11px;
   line-height: 1.9;
   font-family: ${theme.fontMono};
@@ -40,14 +40,20 @@ const Entry = styled.div`
   padding-bottom: 14px;
   border-bottom: 1px solid ${theme.borderDim};
   animation: fadein 0.35s ease;
+
+  &:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
 `;
 
 const EntryHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 `;
 
 const ColorDot = styled.div<{ $color: string; $glow: string }>`
@@ -77,8 +83,8 @@ const AgentNameLabel = styled.span<{ $color: string }>`
 `;
 
 const Arrow = styled.span`
-  color: ${theme.textDark};
-  font-size: 9px;
+  color: ${theme.textDim};
+  font-size: 10px;
   font-family: ${theme.fontMono};
 `;
 
@@ -87,8 +93,8 @@ const SectorBadge = styled.span`
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 2px;
-  background: rgba(249, 115, 22, 0.1);
-  padding: 1px 6px;
+  background: ${theme.accentDim};
+  padding: 2px 8px;
   border-radius: 4px;
   font-family: ${theme.fontMono};
 `;
@@ -97,7 +103,7 @@ const ReasonText = styled.div`
   font-size: 10px;
   color: ${theme.textMuted};
   line-height: 1.75;
-  padding-left: 29px;
+  padding-left: 30px;
   font-family: ${theme.fontMono};
 `;
 
