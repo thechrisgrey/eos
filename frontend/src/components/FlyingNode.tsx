@@ -40,7 +40,7 @@ const FlyingNode: React.FC<FlyingNodeProps> = ({ node }) => {
         fontSize: 13,
         fontWeight: 700,
         color: '#fff',
-        fontFamily: 'monospace',
+        fontFamily: "'Space Mono', monospace",
       }}
     >
       {node.name[0]}

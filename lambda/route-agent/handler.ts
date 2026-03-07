@@ -128,6 +128,10 @@ export async function handler(event: {
         },
       ],
       system: [{ text: systemPrompt }],
+      inferenceConfig: {
+        maxTokens: 600,
+        temperature: 0.2,
+      },
     });
 
     const response = await client.send(command);
@@ -142,7 +146,7 @@ export async function handler(event: {
       parsed = JSON.parse(cleaned);
     } catch {
       return {
-        statusCode: 200,
+        statusCode: 400,
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
         body: JSON.stringify({
           error: `Failed to parse model response as JSON: ${cleaned}`,
@@ -152,7 +156,7 @@ export async function handler(event: {
 
     if (!parsed.sector || !isSector(parsed.sector)) {
       return {
-        statusCode: 200,
+        statusCode: 400,
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
         body: JSON.stringify({
           error: `Invalid sector "${parsed.sector}". Must be one of: ${VALID_SECTORS.join(", ")}`,
