@@ -2,14 +2,14 @@ import { ModelEntry } from '../types';
 
 export const MODEL_CATALOG: ModelEntry[] = [
   {
-    id: 'claude-opus-4-6',
-    name: 'Claude Opus 4.6',
+    id: 'claude-opus-4-5',
+    name: 'Claude Opus 4.5',
     provider: 'Anthropic',
     color: '#a78bfa',
     glow: 'rgba(167,139,250,0.5)',
     capability:
-      'The most powerful Claude model. Exceptional at complex reasoning, long-context synthesis, nuanced strategic analysis, coding, and delivering thoughtful decision support with constitutional AI principles.',
-    modelId: 'us.anthropic.claude-opus-4-6-v1',
+      'Anthropic\'s most capable available model. Exceptional at complex reasoning, long-context synthesis, nuanced strategic analysis, coding, and delivering thoughtful decision support with constitutional AI principles.',
+    modelId: 'us.anthropic.claude-opus-4-5-20251101-v1:0',
   },
   {
     id: 'nova-premier',
@@ -92,16 +92,6 @@ export const MODEL_CATALOG: ModelEntry[] = [
     modelId: 'qwen.qwen3-vl-235b-a22b',
   },
   {
-    id: 'palmyra-x5',
-    name: 'Palmyra X5',
-    provider: 'Writer',
-    color: '#2dd4bf',
-    glow: 'rgba(45,212,191,0.5)',
-    capability:
-      'Writer\'s most capable enterprise model. Purpose-built for business content with strong structured output, compliance-aware generation, and enterprise workflow integration capabilities.',
-    modelId: 'us.writer.palmyra-x5-v1:0',
-  },
-  {
     id: 'gemma-3-27b',
     name: 'Gemma 3 27B',
     provider: 'Google',
@@ -110,16 +100,6 @@ export const MODEL_CATALOG: ModelEntry[] = [
     capability:
       'Google\'s largest open model on Bedrock. Optimized for efficient inference with strong text understanding, summarization, reasoning, and multilingual capabilities focused on responsible AI development.',
     modelId: 'google.gemma-3-27b-it',
-  },
-  {
-    id: 'jamba-1-5-large',
-    name: 'Jamba 1.5 Large',
-    provider: 'AI21 Labs',
-    color: '#818cf8',
-    glow: 'rgba(129,140,248,0.5)',
-    capability:
-      'AI21\'s flagship hybrid SSM-Transformer model. 256K context window with efficient long-document processing, structured data extraction, and enterprise-grade text generation capabilities.',
-    modelId: 'ai21.jamba-1-5-large-v1:0',
   },
   {
     id: 'minimax-m2-1',
@@ -140,16 +120,6 @@ export const MODEL_CATALOG: ModelEntry[] = [
     capability:
       'Zhipu AI\'s flagship model. Strong bilingual (Chinese-English) capabilities with advanced reasoning, code generation, and tool use. Competitive performance across major benchmarks.',
     modelId: 'zai.glm-4.7',
-  },
-  {
-    id: 'command-r-plus',
-    name: 'Command R+',
-    provider: 'Cohere',
-    color: '#fb7185',
-    glow: 'rgba(251,113,133,0.5)',
-    capability:
-      'Cohere\'s most capable model. Optimized for enterprise RAG, tool use, and multi-step reasoning with strong grounded generation, citation capabilities, and multilingual support across 10+ languages.',
-    modelId: 'cohere.command-r-plus-v1:0',
   },
 ];
 

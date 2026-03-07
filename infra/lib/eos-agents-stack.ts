@@ -27,10 +27,22 @@ export class EosAgentsStack extends cdk.Stack {
       },
     });
 
-    // IAM policy granting bedrock:InvokeModel
+    // IAM policy granting bedrock:InvokeModel + Marketplace permissions for model access
     routeAgentFn.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['bedrock:InvokeModel'],
+        actions: [
+          'bedrock:InvokeModel',
+          'bedrock:GetFoundationModel',
+        ],
+        resources: ['*'],
+      }),
+    );
+    routeAgentFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'aws-marketplace:ViewSubscriptions',
+          'aws-marketplace:Subscribe',
+        ],
         resources: ['*'],
       }),
     );
