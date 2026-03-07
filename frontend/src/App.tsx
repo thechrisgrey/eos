@@ -8,7 +8,8 @@ import FlyingNode from './components/FlyingNode';
 import DecisionLog from './components/DecisionLog';
 import GateDivider from './components/GateDivider';
 import SectorTooltip from './components/SectorTooltip';
-import { SectorId } from './types';
+import InferenceConfigPanel from './components/InferenceConfigPanel';
+import { SectorId, AgentId } from './types';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -90,13 +91,14 @@ const MainLayout = styled.div`
   gap: 20px;
   align-items: flex-start;
   width: 100%;
-  max-width: 900px;
+  max-width: 1200px;
   flex-wrap: wrap;
   justify-content: center;
 `;
 
 export default function App() {
   const [hoveredSector, setHoveredSector] = useState<SectorId | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<AgentId | null>(null);
   const {
     agents,
     flying,
@@ -109,6 +111,8 @@ export default function App() {
     deploy,
     deployAll,
     reset,
+    temperature,
+    setTemperature,
   } = useAgentRouter();
 
   return (
@@ -129,6 +133,13 @@ export default function App() {
       </Header>
 
       <MainLayout>
+        <InferenceConfigPanel
+          agents={agents}
+          selectedAgent={selectedAgent}
+          onSelectAgent={setSelectedAgent}
+          temperature={temperature}
+          onTemperatureChange={setTemperature}
+        />
         <EOSWheel
           svgRef={svgRef}
           agents={agents}

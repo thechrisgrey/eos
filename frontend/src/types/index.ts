@@ -25,10 +25,19 @@ export interface Agent {
   modelId: string;
 }
 
+export interface AgentInferenceResult {
+  systemPrompt: string;
+  userPrompt: string;
+  rawOutput: string;
+  temperature: number;
+  latencyMs: number;
+}
+
 export interface AgentState extends Agent {
   status: AgentStatus;
   sector: SectorId | null;
   reason: string | null;
+  inference: AgentInferenceResult | null;
 }
 
 export interface RouteAgentRequest {
@@ -37,11 +46,17 @@ export interface RouteAgentRequest {
   agentProvider: string;
   capability: string;
   modelId: string;
+  temperature: number;
 }
 
 export interface RouteAgentResponse {
   sector: SectorId;
   reason: string;
+  systemPrompt: string;
+  userPrompt: string;
+  rawOutput: string;
+  temperature: number;
+  latencyMs: number;
 }
 
 export interface RouteAgentError {

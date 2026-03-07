@@ -6,7 +6,6 @@ import type {
   AgentId,
   FlyingNodeData,
   DecisionLogEntry,
-  SectorId,
   RouteAgentResponse,
 } from '../types';
 import { svgPointToScreen } from './useSectorGeometry';
@@ -19,6 +18,7 @@ function buildInitialAgents(): AgentState[] {
     status: 'idle' as const,
     sector: null,
     reason: null,
+    inference: null,
   }));
 }
 
@@ -28,6 +28,7 @@ export function useAgentRouter() {
   const [gateOpen, setGateOpen] = useState(false);
   const [log, setLog] = useState<DecisionLogEntry[]>([]);
   const [busy, setBusy] = useState(false);
+  const [temperature, setTemperature] = useState(0);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const agentRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -58,13 +59,14 @@ export function useAgentRouter() {
           agentProvider: agent.provider,
           capability: agent.capability,
           modelId: agent.modelId,
+          temperature,
         }),
       });
 
       if (!res.ok) throw new Error(`API error: ${res.status}`);
 
       const data: RouteAgentResponse = await res.json();
-      const { sector, reason } = data;
+      const { sector, reason, systemPrompt, userPrompt, rawOutput, temperature: usedTemp, latencyMs } = data;
 
       const sectorDef = SECTORS.find((s) => s.id === sector);
       if (!sectorDef || !svgRef.current) throw new Error('Missing sector or SVG ref');
@@ -88,10 +90,11 @@ export function useAgentRouter() {
       };
 
       setFlying((prev) => [...prev, flyingNode]);
+      const inferenceResult = { systemPrompt, userPrompt, rawOutput, temperature: usedTemp, latencyMs };
       setAgents((prev) =>
         prev.map((a) =>
           a.id === id
-            ? { ...a, status: 'flying' as const, sector, reason }
+            ? { ...a, status: 'flying' as const, sector, reason, inference: inferenceResult }
             : a,
         ),
       );
@@ -119,12 +122,12 @@ export function useAgentRouter() {
       setAgents((prev) =>
         prev.map((a) =>
           a.id === id
-            ? { ...a, status: 'idle' as const, sector: null, reason: null }
+            ? { ...a, status: 'idle' as const, sector: null, reason: null, inference: null }
             : a,
         ),
       );
     }
-  }, []);
+  }, [temperature]);
 
   const deployAll = useCallback(async () => {
     if (busy) return;
@@ -166,5 +169,7 @@ export function useAgentRouter() {
     deploy,
     deployAll,
     reset,
+    temperature,
+    setTemperature,
   };
 }

@@ -15,7 +15,7 @@ interface AgentPoolProps {
 
 const Container = styled.div`
   width: 100%;
-  max-width: 900px;
+  max-width: 1200px;
   margin-top: 26px;
 `;
 

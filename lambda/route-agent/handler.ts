@@ -20,11 +20,17 @@ interface RouteRequest {
   agentProvider: string;
   capability: string;
   modelId: string;
+  temperature?: number;
 }
 
 interface RouteSuccess {
   sector: Sector;
   reason: string;
+  systemPrompt: string;
+  userPrompt: string;
+  rawOutput: string;
+  temperature: number;
+  latencyMs: number;
 }
 
 interface RouteError {
@@ -104,7 +110,8 @@ export async function handler(event: {
       typeof event.body === "string" ? event.body : JSON.stringify(event.body);
     const request: RouteRequest = JSON.parse(rawBody ?? "{}");
 
-    const { agentName, agentProvider, capability, modelId } = request;
+    const { agentName, agentProvider, capability, modelId, temperature: reqTemp } = request;
+    const temperature = typeof reqTemp === 'number' ? Math.max(0, Math.min(1, reqTemp)) : 0;
 
     if (!agentName || !agentProvider || !capability || !modelId) {
       return {
@@ -130,11 +137,13 @@ export async function handler(event: {
       system: [{ text: systemPrompt }],
       inferenceConfig: {
         maxTokens: 600,
-        temperature: 0,
+        temperature,
       },
     });
 
+    const startMs = Date.now();
     const response = await client.send(command);
+    const latencyMs = Date.now() - startMs;
 
     const outputText =
       response.output?.message?.content?.[0]?.text ?? "";
@@ -167,6 +176,11 @@ export async function handler(event: {
     const result: RouteSuccess = {
       sector: parsed.sector,
       reason: parsed.reason ?? "No reason provided",
+      systemPrompt,
+      userPrompt: USER_PROMPT,
+      rawOutput: outputText,
+      temperature,
+      latencyMs,
     };
 
     return {
