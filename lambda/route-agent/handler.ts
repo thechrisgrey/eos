@@ -68,6 +68,12 @@ const TURN2_PROMPT = `Based on your analysis above, commit to the single EOS com
 Respond ONLY with valid JSON. No markdown. No explanation. No preamble.
 {"sector":"<one of the six ids above>","reason":"<one sentence>"}`;
 
+function extractText(content: { text?: string; reasoningContent?: unknown }[] | undefined): string {
+  if (!content) return "";
+  const textBlock = content.find((b) => b.text !== undefined);
+  return textBlock?.text ?? "";
+}
+
 function stripMarkdownFences(text: string): string {
   let cleaned = text.trim();
   // Strip ```json ... ``` or ``` ... ```
@@ -130,7 +136,7 @@ export async function handler(event: {
       inferenceConfig,
     }));
 
-    const turn1Text = turn1.output?.message?.content?.[0]?.text ?? "";
+    const turn1Text = extractText(turn1.output?.message?.content as { text?: string; reasoningContent?: unknown }[] | undefined);
 
     // Turn 2: commit to a decision using the analysis as context
     const turn2 = await client.send(new ConverseCommand({
@@ -145,7 +151,7 @@ export async function handler(event: {
     }));
 
     const latencyMs = Date.now() - startMs;
-    const turn2Text = turn2.output?.message?.content?.[0]?.text ?? "";
+    const turn2Text = extractText(turn2.output?.message?.content as { text?: string; reasoningContent?: unknown }[] | undefined);
 
     const cleaned = stripMarkdownFences(turn2Text);
 

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { theme } from './styles/theme';
 import { useAgentRouter } from './hooks/useAgentRouter';
 import EOSWheel from './components/EOSWheel';
-import AgentPool from './components/AgentPool';
+import ModelSelector from './components/ModelSelector';
 import FlyingNode from './components/FlyingNode';
 import DecisionLog from './components/DecisionLog';
 import GateDivider from './components/GateDivider';
@@ -119,6 +119,8 @@ export default function App() {
     reset,
     temperature,
     setTemperature,
+    selectedIds,
+    toggleModel,
   } = useAgentRouter();
 
   return (
@@ -156,8 +158,10 @@ export default function App() {
       </MainLayout>
 
       <GateDivider gateOpen={gateOpen} />
-      <AgentPool
+      <ModelSelector
         agents={agents}
+        selectedIds={selectedIds}
+        toggleModel={toggleModel}
         setAgentRef={setAgentRef}
         deploy={deploy}
         deployAll={deployAll}

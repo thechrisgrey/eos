@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { AGENTS } from '../data/agents';
+import { MODEL_CATALOG, DEFAULT_SELECTED_IDS } from '../data/models';
 import { SECTORS } from '../data/sectors';
 import type {
   AgentState,
@@ -7,23 +7,31 @@ import type {
   FlyingNodeData,
   DecisionLogEntry,
   RouteAgentResponse,
+  ModelEntry,
 } from '../types';
 import { svgPointToScreen } from './useSectorGeometry';
 
 const API_ENDPOINT = import.meta.env.VITE_API_ENDPOINT || '';
 
-function buildInitialAgents(): AgentState[] {
-  return AGENTS.map((a) => ({
-    ...a,
-    status: 'idle' as const,
+function buildAgentState(model: ModelEntry): AgentState {
+  return {
+    ...model,
+    status: 'idle',
     sector: null,
     reason: null,
     inference: null,
-  }));
+  };
 }
 
 export function useAgentRouter() {
-  const [agents, setAgents] = useState<AgentState[]>(buildInitialAgents);
+  const [selectedIds, setSelectedIds] = useState<string[]>(DEFAULT_SELECTED_IDS);
+  const [agentStates, setAgentStates] = useState<Record<string, AgentState>>(() => {
+    const map: Record<string, AgentState> = {};
+    for (const model of MODEL_CATALOG) {
+      map[model.id] = buildAgentState(model);
+    }
+    return map;
+  });
   const [flying, setFlying] = useState<FlyingNodeData[]>([]);
   const [gateOpen, setGateOpen] = useState(false);
   const [log, setLog] = useState<DecisionLogEntry[]>([]);
@@ -33,6 +41,8 @@ export function useAgentRouter() {
   const svgRef = useRef<SVGSVGElement>(null);
   const agentRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  const agents = selectedIds.map((id) => agentStates[id]).filter(Boolean);
+
   const setAgentRef = useCallback(
     (id: string, el: HTMLDivElement | null) => {
       agentRefs.current[id] = el;
@@ -40,25 +50,39 @@ export function useAgentRouter() {
     [],
   );
 
+  const toggleModel = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      if (prev.includes(id)) {
+        // Don't deselect if deployed
+        const state = agentStates[id];
+        if (state && state.status !== 'idle') return prev;
+        return prev.filter((x) => x !== id);
+      }
+      if (prev.length >= 6) return prev;
+      return [...prev, id];
+    });
+  }, [agentStates]);
+
   const deploy = useCallback(async (id: AgentId) => {
-    const agent = AGENTS.find((a) => a.id === id);
-    if (!agent) return;
+    const model = MODEL_CATALOG.find((m) => m.id === id);
+    if (!model) return;
 
     setGateOpen(true);
-    setAgents((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: 'thinking' as const } : a)),
-    );
+    setAgentStates((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], status: 'thinking' },
+    }));
 
     try {
       const res = await fetch(`${API_ENDPOINT}/api/route-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          agentId: agent.id,
-          agentName: agent.name,
-          agentProvider: agent.provider,
-          capability: agent.capability,
-          modelId: agent.modelId,
+          agentId: model.id,
+          agentName: model.name,
+          agentProvider: model.provider,
+          capability: model.capability,
+          modelId: model.modelId,
           temperature,
         }),
       });
@@ -84,33 +108,29 @@ export function useAgentRouter() {
         sy,
         ex: target.x,
         ey: target.y,
-        color: agent.color,
-        glow: agent.glow,
-        name: agent.name,
+        color: model.color,
+        glow: model.glow,
+        name: model.name,
       };
 
       setFlying((prev) => [...prev, flyingNode]);
       const inferenceResult = { systemPrompt, turn1Prompt, turn1Response, turn2Prompt, turn2Response, temperature: usedTemp, latencyMs };
-      setAgents((prev) =>
-        prev.map((a) =>
-          a.id === id
-            ? { ...a, status: 'flying' as const, sector, reason, inference: inferenceResult }
-            : a,
-        ),
-      );
+      setAgentStates((prev) => ({
+        ...prev,
+        [id]: { ...prev[id], status: 'flying', sector, reason, inference: inferenceResult },
+      }));
 
       setTimeout(() => {
         setFlying((prev) => prev.filter((f) => f.id !== flyingNode.id));
-        setAgents((prev) =>
-          prev.map((a) =>
-            a.id === id ? { ...a, status: 'settled' as const } : a,
-          ),
-        );
+        setAgentStates((prev) => ({
+          ...prev,
+          [id]: { ...prev[id], status: 'settled' },
+        }));
         setLog((prev) => [
           {
             key: Date.now(),
             agentId: id,
-            agent,
+            agent: model,
             sector,
             reason,
           },
@@ -119,13 +139,10 @@ export function useAgentRouter() {
       }, 1650);
     } catch (err) {
       console.error(`Failed to deploy agent ${id}:`, err);
-      setAgents((prev) =>
-        prev.map((a) =>
-          a.id === id
-            ? { ...a, status: 'idle' as const, sector: null, reason: null, inference: null }
-            : a,
-        ),
-      );
+      setAgentStates((prev) => ({
+        ...prev,
+        [id]: { ...prev[id], status: 'idle', sector: null, reason: null, inference: null },
+      }));
     }
   }, [temperature]);
 
@@ -141,14 +158,23 @@ export function useAgentRouter() {
       if (i > 0) {
         await new Promise((resolve) => setTimeout(resolve, 750));
       }
-      deploy(idleIds[i]); // fire and forget -- don't await
+      deploy(idleIds[i]);
     }
 
     setBusy(false);
   }, [busy, agents, deploy]);
 
   const reset = useCallback(() => {
-    setAgents(buildInitialAgents());
+    setAgentStates((prev) => {
+      const next = { ...prev };
+      for (const id of Object.keys(next)) {
+        const model = MODEL_CATALOG.find((m) => m.id === id);
+        if (model) {
+          next[id] = buildAgentState(model);
+        }
+      }
+      return next;
+    });
     setFlying([]);
     setGateOpen(false);
     setLog([]);
@@ -171,5 +197,7 @@ export function useAgentRouter() {
     reset,
     temperature,
     setTemperature,
+    selectedIds,
+    toggleModel,
   };
 }

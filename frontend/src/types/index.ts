@@ -11,12 +11,12 @@ export interface Sector {
   color: { base: string; hover: string };
 }
 
-export type AgentId = 'claude' | 'gpt' | 'gemma' | 'llama' | 'mistral';
+export type AgentId = string;
 
 export type AgentStatus = 'idle' | 'thinking' | 'flying' | 'settled';
 
-export interface Agent {
-  id: AgentId;
+export interface ModelEntry {
+  id: string;
   name: string;
   provider: string;
   color: string;
@@ -24,6 +24,8 @@ export interface Agent {
   capability: string;
   modelId: string;
 }
+
+export interface Agent extends ModelEntry {}
 
 export interface AgentInferenceResult {
   systemPrompt: string;
