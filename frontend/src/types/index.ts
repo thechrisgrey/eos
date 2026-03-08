@@ -130,3 +130,23 @@ export interface FlyingNodeData {
   glow: string;
   name: string;
 }
+
+export interface RaceEntry {
+  step: InferenceStep;
+  turn1LatencyMs?: number;
+  turn2LatencyMs?: number;
+  sector?: SectorId;
+  error?: string;
+}
+
+export interface StoredResult {
+  id: string;
+  timestamp: number;
+  modelId: string;
+  modelName: string;
+  provider: string;
+  sector: SectorId;
+  reason: string;
+  temperature: number;
+  latencyMs: number;
+}

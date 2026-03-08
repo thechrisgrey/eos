@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { DecisionLogEntry } from '../types';
 import { theme } from '../styles/theme';
 
 interface DecisionLogProps {
   log: DecisionLogEntry[];
+  exportJSON?: () => string;
 }
 
 const Container = styled.div`
@@ -19,13 +20,38 @@ const Container = styled.div`
   overflow-y: auto;
 `;
 
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+`;
+
 const Header = styled.div`
   font-size: 9px;
   letter-spacing: 5px;
   color: ${theme.accent};
-  margin-bottom: 18px;
   font-weight: 700;
   font-family: ${theme.fontMono};
+`;
+
+const CopyBtn = styled.button<{ $copied?: boolean }>`
+  font-size: 8px;
+  letter-spacing: 2px;
+  font-weight: 700;
+  font-family: ${theme.fontMono};
+  background: none;
+  border: 1px solid ${(p) => p.$copied ? theme.accent : theme.border};
+  border-radius: 3px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: ${(p) => p.$copied ? theme.accent : theme.textDim};
+
+  &:hover {
+    border-color: ${theme.textDim};
+    color: ${theme.textSoft};
+  }
 `;
 
 const EmptyState = styled.div`
@@ -107,10 +133,27 @@ const ReasonText = styled.div`
   font-family: ${theme.fontMono};
 `;
 
-const DecisionLog: React.FC<DecisionLogProps> = ({ log }) => {
+const DecisionLog: React.FC<DecisionLogProps> = ({ log, exportJSON }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (!exportJSON) return;
+    navigator.clipboard.writeText(exportJSON()).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
   return (
     <Container>
-      <Header>AGENT DECISIONS</Header>
+      <HeaderRow>
+        <Header>AGENT DECISIONS</Header>
+        {exportJSON && (
+          <CopyBtn $copied={copied} onClick={handleCopy}>
+            {copied ? 'COPIED' : 'COPY JSON'}
+          </CopyBtn>
+        )}
+      </HeaderRow>
       {log.length === 0 ? (
         <EmptyState>
           Deploy agents below to see their self-routing decisions appear

@@ -16,6 +16,7 @@ interface EOSWheelProps {
   agents: AgentState[];
   hoveredSector: SectorId | null;
   onSectorHover: (id: SectorId | null) => void;
+  sectorCounts: Record<SectorId, number>;
 }
 
 const WheelSvg = styled.svg`
@@ -30,7 +31,9 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
   agents,
   hoveredSector,
   onSectorHover,
+  sectorCounts,
 }) => {
+  const maxCount = Math.max(1, ...Object.values(sectorCounts));
   const settledBySector: Record<string, AgentState[]> = {};
   agents.forEach((a) => {
     if (a.status === 'settled' && a.sector) {
@@ -83,6 +86,33 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
                 cursor: 'pointer',
               }}
             />
+
+            {/* Heat map overlay */}
+            {(sectorCounts[sector.id] || 0) > 0 && (
+              <path
+                d={makeSectorPath(sector.startAngle, sector.endAngle)}
+                fill={`rgba(234, 88, 12, ${(sectorCounts[sector.id] / maxCount) * 0.22})`}
+                style={{ pointerEvents: 'none', transition: 'fill 0.6s' }}
+              />
+            )}
+
+            {/* Count badge */}
+            {(sectorCounts[sector.id] || 0) > 0 && (
+              <text
+                x={lx}
+                y={ly - 25}
+                textAnchor="middle"
+                style={{
+                  fontSize: 8,
+                  fontFamily: "'Space Mono', monospace",
+                  fontWeight: 700,
+                  fill: 'rgba(234, 88, 12, 0.55)',
+                  pointerEvents: 'none',
+                }}
+              >
+                x{sectorCounts[sector.id]}
+              </text>
+            )}
 
             <text
               x={lx}

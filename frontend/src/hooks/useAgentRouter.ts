@@ -10,10 +10,18 @@ import type {
   Turn2Response,
   ModelEntry,
   InferenceModalState,
+  InferenceStep,
+  RaceEntry,
 } from '../types';
 import { svgPointToScreen } from './useSectorGeometry';
+import { useResultsStore } from './useResultsStore';
 
 const API_ENDPOINT = import.meta.env.VITE_API_ENDPOINT || '';
+
+interface DeployOptions {
+  skipModal?: boolean;
+  onStepChange?: (step: InferenceStep, data?: Record<string, unknown>) => void;
+}
 
 function buildAgentState(model: ModelEntry): AgentState {
   return {
@@ -40,11 +48,23 @@ export function useAgentRouter() {
   const [busy, setBusy] = useState(false);
   const [temperature, setTemperature] = useState(0);
   const [inferenceModal, setInferenceModal] = useState<InferenceModalState | null>(null);
+  const [raceState, setRaceState] = useState<Record<string, RaceEntry> | null>(null);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const agentRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  // Track whether the modal was skipped so we don't re-open it
   const skippedRef = useRef(false);
+
+  const {
+    sectorCounts,
+    totalDeployments,
+    avgLatencyMs,
+    mostPopularSector,
+    mostPopularPct,
+    sessionCount,
+    addResult,
+    clearHistory,
+    exportJSON,
+  } = useResultsStore();
 
   const agents = selectedIds.map((id) => agentStates[id]).filter(Boolean);
 
@@ -72,23 +92,31 @@ export function useAgentRouter() {
     setInferenceModal(null);
   }, []);
 
-  const deploy = useCallback(async (id: AgentId) => {
+  const dismissRace = useCallback(() => {
+    setRaceState(null);
+  }, []);
+
+  const deploy = useCallback(async (id: AgentId, opts?: DeployOptions) => {
     const model = MODEL_CATALOG.find((m) => m.id === id);
     if (!model) return;
 
-    skippedRef.current = false;
+    const showModal = !opts?.skipModal;
+
+    if (showModal) skippedRef.current = false;
     setGateOpen(true);
     setAgentStates((prev) => ({
       ...prev,
       [id]: { ...prev[id], status: 'thinking' },
     }));
 
-    // Open modal at init step
-    setInferenceModal({
-      agentId: id,
-      agent: model,
-      step: 'init',
-    });
+    if (showModal) {
+      setInferenceModal({
+        agentId: id,
+        agent: model,
+        step: 'init',
+      });
+    }
+    opts?.onStepChange?.('init', {});
 
     const baseBody = {
       agentId: model.id,
@@ -101,7 +129,7 @@ export function useAgentRouter() {
 
     try {
       // ── Turn 1 ──
-      if (!skippedRef.current) {
+      if (showModal && !skippedRef.current) {
         setInferenceModal((prev) => prev && prev.agentId === id ? {
           ...prev,
           step: 'turn1-sending',
@@ -109,6 +137,7 @@ export function useAgentRouter() {
           turn1Prompt: undefined,
         } : prev);
       }
+      opts?.onStepChange?.('turn1-sending', {});
 
       const res1 = await fetch(`${API_ENDPOINT}/api/route-agent`, {
         method: 'POST',
@@ -123,8 +152,7 @@ export function useAgentRouter() {
 
       const turn1Data: Turn1Response = await res1.json();
 
-      // Show turn 1 sending state with prompts, then received
-      if (!skippedRef.current) {
+      if (showModal && !skippedRef.current) {
         setInferenceModal((prev) => prev && prev.agentId === id ? {
           ...prev,
           step: 'turn1-sending',
@@ -132,7 +160,6 @@ export function useAgentRouter() {
           turn1Prompt: turn1Data.turn1Prompt,
         } : prev);
 
-        // Brief delay to show the prompt before showing response
         await new Promise((r) => setTimeout(r, 300));
 
         setInferenceModal((prev) => prev && prev.agentId === id ? {
@@ -142,17 +169,18 @@ export function useAgentRouter() {
           turn1LatencyMs: turn1Data.latencyMs,
         } : prev);
 
-        // Pause so user can read
         await new Promise((r) => setTimeout(r, 800));
       }
+      opts?.onStepChange?.('turn1-received', { turn1LatencyMs: turn1Data.latencyMs });
 
       // ── Turn 2 ──
-      if (!skippedRef.current) {
+      if (showModal && !skippedRef.current) {
         setInferenceModal((prev) => prev && prev.agentId === id ? {
           ...prev,
           step: 'turn2-sending',
         } : prev);
       }
+      opts?.onStepChange?.('turn2-sending', {});
 
       const res2 = await fetch(`${API_ENDPOINT}/api/route-agent`, {
         method: 'POST',
@@ -171,7 +199,7 @@ export function useAgentRouter() {
 
       const turn2Data: Turn2Response = await res2.json();
 
-      if (!skippedRef.current) {
+      if (showModal && !skippedRef.current) {
         setInferenceModal((prev) => prev && prev.agentId === id ? {
           ...prev,
           step: 'turn2-sending',
@@ -189,7 +217,6 @@ export function useAgentRouter() {
 
         await new Promise((r) => setTimeout(r, 800));
 
-        // Show routing result
         setInferenceModal((prev) => prev && prev.agentId === id ? {
           ...prev,
           step: 'routing',
@@ -197,6 +224,7 @@ export function useAgentRouter() {
           reason: turn2Data.reason,
         } : prev);
       }
+      opts?.onStepChange?.('turn2-received', { turn2LatencyMs: turn2Data.latencyMs });
 
       const { sector, reason } = turn2Data;
       const totalLatencyMs = turn1Data.latencyMs + turn2Data.latencyMs;
@@ -209,6 +237,8 @@ export function useAgentRouter() {
         temperature: turn1Data.temperature,
         latencyMs: totalLatencyMs,
       };
+
+      opts?.onStepChange?.('routing', { sector });
 
       // ── Animate flying node ──
       const sectorDef = SECTORS.find((s) => s.id === sector);
@@ -232,8 +262,7 @@ export function useAgentRouter() {
         name: model.name,
       };
 
-      // If modal is still showing, wait a moment then close before animating
-      if (!skippedRef.current) {
+      if (showModal && !skippedRef.current) {
         await new Promise((r) => setTimeout(r, 1200));
         setInferenceModal(null);
       }
@@ -260,13 +289,22 @@ export function useAgentRouter() {
           },
           ...prev,
         ]);
+        addResult({
+          modelId: model.modelId,
+          modelName: model.name,
+          provider: model.provider,
+          sector,
+          reason,
+          temperature,
+          latencyMs: totalLatencyMs,
+        });
       }, 1650);
     } catch (err) {
       console.error(`Failed to deploy agent ${id}:`, err);
 
       const errorMsg = err instanceof Error ? err.message : 'Unknown error';
 
-      if (!skippedRef.current) {
+      if (showModal && !skippedRef.current) {
         setInferenceModal((prev) => prev && prev.agentId === id ? {
           ...prev,
           step: 'error',
@@ -274,12 +312,14 @@ export function useAgentRouter() {
         } : prev);
       }
 
+      opts?.onStepChange?.('error', { error: errorMsg });
+
       setAgentStates((prev) => ({
         ...prev,
         [id]: { ...prev[id], status: 'idle', sector: null, reason: null, inference: null },
       }));
     }
-  }, [temperature]);
+  }, [temperature, addResult]);
 
   const deployAll = useCallback(async () => {
     if (busy) return;
@@ -289,13 +329,31 @@ export function useAgentRouter() {
       .filter((a) => a.status === 'idle')
       .map((a) => a.id);
 
-    for (let i = 0; i < idleIds.length; i++) {
-      if (i > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 750));
-      }
-      await deploy(idleIds[i]);
+    // Initialize race state
+    const initialRace: Record<string, RaceEntry> = {};
+    for (const id of idleIds) {
+      initialRace[id] = { step: 'init' };
     }
+    setRaceState(initialRace);
 
+    // Deploy all concurrently
+    await Promise.allSettled(
+      idleIds.map((id) =>
+        deploy(id, {
+          skipModal: true,
+          onStepChange: (step, data) => {
+            setRaceState((prev) =>
+              prev
+                ? { ...prev, [id]: { ...prev[id], step, ...data } as RaceEntry }
+                : prev,
+            );
+          },
+        }),
+      ),
+    );
+
+    // Auto-dismiss race panel after delay
+    setTimeout(() => setRaceState(null), 2000);
     setBusy(false);
   }, [busy, agents, deploy]);
 
@@ -315,6 +373,7 @@ export function useAgentRouter() {
     setLog([]);
     setBusy(false);
     setInferenceModal(null);
+    setRaceState(null);
   }, []);
 
   const anyIdle = agents.some((a) => a.status === 'idle');
@@ -337,5 +396,15 @@ export function useAgentRouter() {
     toggleModel,
     inferenceModal,
     skipModal,
+    raceState,
+    dismissRace,
+    sectorCounts,
+    totalDeployments,
+    avgLatencyMs,
+    mostPopularSector,
+    mostPopularPct,
+    sessionCount,
+    clearHistory,
+    exportJSON,
   };
 }

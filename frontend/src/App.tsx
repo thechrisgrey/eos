@@ -10,6 +10,8 @@ import GateDivider from './components/GateDivider';
 import SectorTooltip from './components/SectorTooltip';
 import InferenceConfigPanel from './components/InferenceConfigPanel';
 import InferenceModal from './components/InferenceModal';
+import RacePanel from './components/RacePanel';
+import StatsBar from './components/StatsBar';
 import WelcomeModal from './components/WelcomeModal';
 import { SectorId, AgentId } from './types';
 
@@ -125,6 +127,16 @@ export default function App() {
     toggleModel,
     inferenceModal,
     skipModal,
+    raceState,
+    dismissRace,
+    sectorCounts,
+    totalDeployments,
+    avgLatencyMs,
+    mostPopularSector,
+    mostPopularPct,
+    sessionCount,
+    clearHistory,
+    exportJSON,
   } = useAgentRouter();
 
   return (
@@ -158,9 +170,19 @@ export default function App() {
           agents={agents}
           hoveredSector={hoveredSector}
           onSectorHover={setHoveredSector}
+          sectorCounts={sectorCounts}
         />
-        <DecisionLog log={log} />
+        <DecisionLog log={log} exportJSON={exportJSON} />
       </MainLayout>
+
+      <StatsBar
+        totalDeployments={totalDeployments}
+        mostPopularSector={mostPopularSector}
+        mostPopularPct={mostPopularPct}
+        avgLatencyMs={avgLatencyMs}
+        sessionCount={sessionCount}
+        onClearHistory={clearHistory}
+      />
 
       <GateDivider gateOpen={gateOpen} />
       <ModelSelector
@@ -182,6 +204,10 @@ export default function App() {
 
       {inferenceModal && (
         <InferenceModal state={inferenceModal} onSkip={skipModal} />
+      )}
+
+      {raceState && (
+        <RacePanel state={raceState} agents={agents} onDismiss={dismissRace} />
       )}
     </PageContainer>
   );
