@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { theme } from '../styles/theme';
 
 const STORAGE_KEY = 'eos-welcome-dismissed';
+const TOTAL_PAGES = 3;
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -12,6 +13,11 @@ const fadeIn = keyframes`
 const slideUp = keyframes`
   from { opacity: 0; transform: translate(-50%, -48%); }
   to { opacity: 1; transform: translate(-50%, -50%); }
+`;
+
+const pageIn = keyframes`
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
 `;
 
 const Backdrop = styled.div`
@@ -30,23 +36,19 @@ const Panel = styled.div`
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90%;
-  max-width: 560px;
-  max-height: 85vh;
-  overflow-y: auto;
+  max-width: 480px;
   background: #0c0c14;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-  padding: 40px 36px 32px;
+  padding: 36px 32px 28px;
   animation: ${slideUp} 0.4s ease-out;
   box-shadow:
     0 0 80px rgba(234, 88, 12, 0.08),
     0 24px 64px rgba(0, 0, 0, 0.6);
+`;
 
-  &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 2px;
-  }
+const PageContent = styled.div`
+  animation: ${pageIn} 0.25s ease-out;
 `;
 
 const TopLabel = styled.div`
@@ -84,7 +86,7 @@ const SectionTitle = styled.div`
   letter-spacing: 3px;
   color: ${theme.accent};
   font-weight: 700;
-  margin: 20px 0 10px;
+  margin: 0 0 14px;
   font-family: ${theme.fontMono};
 `;
 
@@ -96,17 +98,35 @@ const Body = styled.p`
   font-family: ${theme.fontMono};
 `;
 
-const StepList = styled.ol`
-  margin: 0 0 8px;
-  padding-left: 20px;
+const StepRow = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  align-items: flex-start;
 `;
 
-const StepItem = styled.li`
+const StepNumber = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(234, 88, 12, 0.12);
+  border: 1px solid rgba(234, 88, 12, 0.3);
+  color: ${theme.accent};
+  font-size: 10px;
+  font-weight: 700;
+  font-family: ${theme.fontMono};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+`;
+
+const StepText = styled.div`
   font-size: 12px;
-  line-height: 1.8;
+  line-height: 1.7;
   color: ${theme.textSoft};
   font-family: ${theme.fontMono};
-  margin-bottom: 4px;
 
   strong {
     color: ${theme.text};
@@ -117,7 +137,7 @@ const SectorGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  margin: 10px 0 8px;
+  margin: 0 0 14px;
 `;
 
 const SectorTag = styled.div`
@@ -137,8 +157,64 @@ const Footer = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 28px;
+  margin-top: 24px;
   gap: 12px;
+`;
+
+const Dots = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`;
+
+const Dot = styled.div<{ $active: boolean }>`
+  width: ${(p) => (p.$active ? '18px' : '6px')};
+  height: 6px;
+  border-radius: 3px;
+  transition: all 0.25s ease;
+  background: ${(p) => (p.$active ? theme.accent : 'rgba(255, 255, 255, 0.12)')};
+`;
+
+const NavRow = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const navButtonBase = css`
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: ${theme.fontMono};
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+`;
+
+const BackButton = styled.button`
+  ${navButtonBase}
+  background: none;
+  border: 1px solid ${theme.border};
+  color: ${theme.textDim};
+
+  &:hover {
+    border-color: ${theme.textDim};
+    color: ${theme.textSoft};
+  }
+`;
+
+const NextButton = styled.button`
+  ${navButtonBase}
+  background: ${theme.accent};
+  border: 1px solid ${theme.accent};
+  color: #fff;
+
+  &:hover {
+    background: ${theme.accentHover};
+    transform: translateY(-1px);
+    box-shadow: 0 4px 24px rgba(249, 115, 22, 0.35);
+  }
 `;
 
 const FooterNote = styled.div`
@@ -148,29 +224,97 @@ const FooterNote = styled.div`
   letter-spacing: 1px;
 `;
 
-const EnterButton = styled.button`
-  padding: 12px 36px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: ${theme.fontMono};
-  letter-spacing: 3px;
-  cursor: pointer;
-  background: ${theme.accent};
-  border: 1px solid ${theme.accent};
-  color: #fff;
-  transition: all 0.2s;
-  flex-shrink: 0;
+/* ── Pages ── */
 
-  &:hover {
-    background: ${theme.accentHover};
-    transform: translateY(-1px);
-    box-shadow: 0 4px 24px rgba(249, 115, 22, 0.35);
-  }
-`;
+function Page1() {
+  return (
+    <PageContent key="p1">
+      <TopLabel>WELCOME</TopLabel>
+      <ModalTitle>
+        EOS <AccentText>x</AccentText> AI Agents
+      </ModalTitle>
+      <Divider />
+      <Body>
+        Where do AI agents belong in your business operating system?
+      </Body>
+      <Body>
+        This experiment deploys foundation models from twelve AI vendors and
+        lets each one self-route into the EOS sector where it believes it can
+        deliver the most value.
+      </Body>
+    </PageContent>
+  );
+}
+
+function Page2() {
+  return (
+    <PageContent key="p2">
+      <SectionTitle>HOW IT WORKS</SectionTitle>
+      <StepRow>
+        <StepNumber>1</StepNumber>
+        <StepText>
+          <strong>Select models.</strong> Choose up to 6 from 12 foundation
+          models across Anthropic, Amazon, Meta, OpenAI, Mistral, and more.
+        </StepText>
+      </StepRow>
+      <StepRow>
+        <StepNumber>2</StepNumber>
+        <StepText>
+          <strong>Deploy.</strong> Click a model or hit "Deploy All" to run
+          a two-turn inference chain powered by Amazon Bedrock.
+        </StepText>
+      </StepRow>
+      <StepRow>
+        <StepNumber>3</StepNumber>
+        <StepText>
+          <strong>Watch them route.</strong> Each model reasons through which
+          EOS sector fits best and flies into its chosen position on the wheel.
+        </StepText>
+      </StepRow>
+      <StepRow>
+        <StepNumber>4</StepNumber>
+        <StepText>
+          <strong>Inspect reasoning.</strong> See the full prompt chain,
+          chain-of-thought analysis, and final verdict for each deployment.
+        </StepText>
+      </StepRow>
+    </PageContent>
+  );
+}
+
+function Page3() {
+  return (
+    <PageContent key="p3">
+      <SectionTitle>THE 6 EOS SECTORS</SectionTitle>
+      <SectorGrid>
+        <SectorTag>VISION</SectorTag>
+        <SectorTag>PEOPLE</SectorTag>
+        <SectorTag>DATA</SectorTag>
+        <SectorTag>ISSUES</SectorTag>
+        <SectorTag>PROCESS</SectorTag>
+        <SectorTag>TRACTION</SectorTag>
+      </SectorGrid>
+      <Body>
+        Each sector is a core pillar of a well-run business. The models decide
+        for themselves where they fit -- revealing how different architectures
+        produce different strategic strengths.
+      </Body>
+      <Body>
+        Try adjusting the temperature slider, swap models in and out, and
+        redeploy to compare results.
+      </Body>
+      <FooterNote style={{ marginTop: 16 }}>BUILT BY ALTIVUM</FooterNote>
+    </PageContent>
+  );
+}
+
+const PAGES = [Page1, Page2, Page3];
+
+/* ── Modal ── */
 
 const WelcomeModal: React.FC = () => {
   const [visible, setVisible] = useState(false);
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     const dismissed = localStorage.getItem(STORAGE_KEY);
@@ -186,83 +330,29 @@ const WelcomeModal: React.FC = () => {
 
   if (!visible) return null;
 
+  const PageComponent = PAGES[page];
+  const isLast = page === TOTAL_PAGES - 1;
+  const isFirst = page === 0;
+
   return (
     <>
       <Backdrop onClick={dismiss} />
       <Panel>
-        <TopLabel>WELCOME</TopLabel>
-        <ModalTitle>
-          EOS <AccentText>x</AccentText> AI Agents
-        </ModalTitle>
-
-        <Divider />
-
-        <Body>
-          This is an interactive experiment that explores a simple but powerful
-          question: where do AI agents belong in your business operating system?
-        </Body>
-
-        <Body>
-          Using the Entrepreneurial Operating System (EOS) framework as a lens,
-          this app deploys foundation models from twelve different AI vendors
-          and lets each one self-route into the EOS sector where it believes it
-          can deliver the most value.
-        </Body>
-
-        <SectionTitle>HOW IT WORKS</SectionTitle>
-
-        <StepList>
-          <StepItem>
-            <strong>Select your models.</strong> Choose up to 6 from the
-            catalog of 12 foundation models spanning providers like Anthropic,
-            Amazon, Meta, OpenAI, Mistral, and more.
-          </StepItem>
-          <StepItem>
-            <strong>Deploy them.</strong> Click a model or hit "Deploy All" to
-            send each one through a two-turn inference chain powered by Amazon
-            Bedrock.
-          </StepItem>
-          <StepItem>
-            <strong>Watch them route.</strong> Each model analyzes its own
-            capabilities, reasons through which EOS sector fits best, and flies
-            into its chosen position on the wheel.
-          </StepItem>
-          <StepItem>
-            <strong>Inspect the reasoning.</strong> Open the inference panel to
-            see the full prompt chain, chain-of-thought analysis, and final
-            verdict for each deployment.
-          </StepItem>
-        </StepList>
-
-        <SectionTitle>THE 6 EOS SECTORS</SectionTitle>
-
-        <SectorGrid>
-          <SectorTag>VISION</SectorTag>
-          <SectorTag>PEOPLE</SectorTag>
-          <SectorTag>DATA</SectorTag>
-          <SectorTag>ISSUES</SectorTag>
-          <SectorTag>PROCESS</SectorTag>
-          <SectorTag>TRACTION</SectorTag>
-        </SectorGrid>
-
-        <Body>
-          Each sector represents a core pillar of a well-run business. The
-          models decide for themselves where they fit — revealing how different
-          architectures and training approaches produce different strategic
-          strengths.
-        </Body>
-
-        <SectionTitle>EXPERIMENT</SectionTitle>
-
-        <Body>
-          Try adjusting the temperature slider to see how randomness affects
-          routing decisions. Reset and redeploy to compare results. Swap models
-          in and out to see which vendors gravitate toward which sectors.
-        </Body>
-
+        <PageComponent />
         <Footer>
-          <FooterNote>BUILT BY ALTIVUM</FooterNote>
-          <EnterButton onClick={dismiss}>ENTER</EnterButton>
+          <Dots>
+            {Array.from({ length: TOTAL_PAGES }, (_, i) => (
+              <Dot key={i} $active={i === page} />
+            ))}
+          </Dots>
+          <NavRow>
+            {!isFirst && <BackButton onClick={() => setPage(page - 1)}>BACK</BackButton>}
+            {isLast ? (
+              <NextButton onClick={dismiss}>ENTER</NextButton>
+            ) : (
+              <NextButton onClick={() => setPage(page + 1)}>NEXT</NextButton>
+            )}
+          </NavRow>
         </Footer>
       </Panel>
     </>
