@@ -117,6 +117,10 @@ export async function handler(event: {
 
       const turn1Text = extractText(turn1.output?.message?.content as { text?: string; reasoningContent?: unknown }[] | undefined);
 
+      if (!turn1Text.trim()) {
+        return jsonResponse(400, { error: "Model returned an empty response on Turn 1. This model may not support the Converse API reliably." });
+      }
+
       return jsonResponse(200, {
         systemPrompt: SYSTEM_PROMPT,
         turn1Prompt: TURN1_PROMPT,
@@ -145,6 +149,11 @@ export async function handler(event: {
       }));
 
       const turn2Text = extractText(turn2.output?.message?.content as { text?: string; reasoningContent?: unknown }[] | undefined);
+
+      if (!turn2Text.trim()) {
+        return jsonResponse(400, { error: "Model returned an empty response on Turn 2. This model may not support multi-turn conversation reliably." });
+      }
+
       const cleaned = stripMarkdownFences(turn2Text);
 
       let parsed: { sector?: string; reason?: string };
@@ -203,6 +212,11 @@ Respond ONLY with valid JSON. No markdown. No explanation. No preamble.
       }));
 
       const turn3Text = extractText(turn3.output?.message?.content as { text?: string; reasoningContent?: unknown }[] | undefined);
+
+      if (!turn3Text.trim()) {
+        return jsonResponse(400, { error: "Model returned an empty response on Turn 3. This model may not support multi-turn conversation reliably." });
+      }
+
       const cleaned3 = stripMarkdownFences(turn3Text);
 
       let parsed3: { sector?: string; reason?: string };
@@ -255,6 +269,11 @@ Respond ONLY with valid JSON. No markdown. No explanation. No preamble.
 
     const latencyMs = Date.now() - startMs;
     const turn2Text = extractText(turn2.output?.message?.content as { text?: string; reasoningContent?: unknown }[] | undefined);
+
+    if (!turn2Text.trim()) {
+      return jsonResponse(400, { error: "Model returned an empty response. This model may not support multi-turn conversation reliably." });
+    }
+
     const cleaned = stripMarkdownFences(turn2Text);
 
     let parsed: { sector?: string; reason?: string };

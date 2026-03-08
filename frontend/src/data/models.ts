@@ -102,16 +102,6 @@ export const MODEL_CATALOG: ModelEntry[] = [
     modelId: 'google.gemma-3-27b-it',
   },
   {
-    id: 'minimax-m2-1',
-    name: 'MiniMax M2.1',
-    provider: 'MiniMax',
-    color: '#a3e635',
-    glow: 'rgba(163,230,53,0.5)',
-    capability:
-      'MiniMax\'s latest model with strong reasoning, creative writing, and code generation. Features extended thinking capabilities and efficient performance across diverse language tasks.',
-    modelId: 'minimax.minimax-m2.1',
-  },
-  {
     id: 'glm-4-7',
     name: 'GLM 4.7',
     provider: 'Z.AI',
