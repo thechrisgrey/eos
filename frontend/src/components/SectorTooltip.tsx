@@ -1,5 +1,5 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { SectorId } from '../types';
 import { SECTORS } from '../data/sectors';
 import { theme } from '../styles/theme';
@@ -9,6 +9,11 @@ interface SectorTooltipProps {
   x: number;
   y: number;
 }
+
+const tooltipIn = keyframes`
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+`;
 
 const Tooltip = styled.div<{ $x: number; $y: number }>`
   position: fixed;
@@ -24,7 +29,7 @@ const Tooltip = styled.div<{ $x: number; $y: number }>`
   max-width: 400px;
   z-index: 200;
   backdrop-filter: blur(14px);
-  animation: fadein 0.15s ease;
+  animation: ${tooltipIn} 0.15s ease;
   pointer-events: none;
   line-height: 1.75;
   white-space: normal;
