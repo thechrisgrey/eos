@@ -151,6 +151,8 @@ export async function handler(event: {
         return jsonResponse(400, { error: `Failed to parse model response as JSON: ${cleaned}` });
       }
 
+      if (parsed.sector) parsed.sector = parsed.sector.toLowerCase();
+
       if (!parsed.sector || !isSector(parsed.sector)) {
         return jsonResponse(400, { error: `Invalid sector "${parsed.sector}". Must be one of: ${VALID_SECTORS.join(", ")}` });
       }
