@@ -14,6 +14,8 @@ interface ModelSelectorProps {
   reset: () => void;
   busy: boolean;
   anyIdle: boolean;
+  deployCountByModel: Record<string, number>;
+  totalDeployed: number;
 }
 
 const Container = styled.div`
@@ -75,6 +77,26 @@ const DashRing = styled.div<{ $color: string }>`
   border-radius: 50%;
   border: 2px dashed ${(p) => p.$color}44;
   animation: spin 2s linear infinite;
+`;
+
+const DeployBadge = styled.div<{ $color: string }>`
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: ${(p) => p.$color};
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  font-family: ${theme.fontMono};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 0 8px ${(p) => p.$color};
+  z-index: 2;
 `;
 
 const MainCircle = styled.div<{
@@ -272,22 +294,32 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   reset,
   busy,
   anyIdle,
+  deployCountByModel,
+  totalDeployed,
 }) => {
   const canDeploy = !busy && anyIdle;
   const selectionFull = selectedIds.length >= 6;
+  const gameOver = totalDeployed >= 6;
 
   return (
     <Container>
       <SectionLabel>SELECTED MODELS -- CLICK TO DEPLOY</SectionLabel>
       <SelectedRow>
         {agents.map((a) => {
+          const deployCount = deployCountByModel[a.id] || 0;
           const isIdle = a.status === 'idle';
-          const isSettled = a.status === 'settled';
+          const canClickDeploy = isIdle && !gameOver;
 
           let statusText = '';
           switch (a.status) {
             case 'idle':
-              statusText = a.provider;
+              if (deployCount > 0 && gameOver) {
+                statusText = `DEPLOYED x${deployCount}`;
+              } else if (deployCount > 0) {
+                statusText = 'READY';
+              } else {
+                statusText = a.provider;
+              }
               break;
             case 'thinking':
               statusText = 'THINKING...';
@@ -295,31 +327,31 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             case 'flying':
               statusText = 'EN ROUTE ->';
               break;
-            case 'settled':
-              statusText = a.sector ? a.sector.toUpperCase() : '';
-              break;
           }
 
           return (
             <AgentNode
               key={a.id}
               ref={(el) => setAgentRef(a.id, el)}
-              $idle={isIdle}
-              $settled={isSettled}
-              onClick={() => isIdle && deploy(a.id)}
+              $idle={canClickDeploy}
+              $settled={gameOver && isIdle && deployCount === 0}
+              onClick={() => canClickDeploy && deploy(a.id)}
             >
               <CircleContainer>
                 {a.status === 'thinking' && <SpinRing $color={a.color} />}
                 {a.status === 'flying' && <DashRing $color={a.color} />}
+                {deployCount > 0 && (
+                  <DeployBadge $color={a.color}>x{deployCount}</DeployBadge>
+                )}
                 <MainCircle
                   $color={a.color}
                   $glow={a.glow}
                   $status={a.status}
                 >
-                  {isSettled ? '\u2713' : a.name[0]}
+                  {a.name[0]}
                 </MainCircle>
               </CircleContainer>
-              <AgentName $color={a.color} $idle={isIdle}>
+              <AgentName $color={a.color} $idle={canClickDeploy}>
                 {a.name}
               </AgentName>
               <AgentStatus>{statusText}</AgentStatus>
@@ -334,7 +366,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           disabled={!canDeploy}
           onClick={() => canDeploy && deployAll()}
         >
-          {busy ? 'DEPLOYING...' : 'DEPLOY ALL'}
+          {busy ? 'DEPLOYING...' : gameOver ? 'ALL DEPLOYED' : 'DEPLOY ALL'}
         </DeployButton>
         <ResetButton onClick={reset}>RESET</ResetButton>
       </ButtonRow>
@@ -342,14 +374,15 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
       <Divider />
 
       <SelectionCount>
-        {selectedIds.length} / 6 SELECTED
+        {totalDeployed} / 6 DEPLOYED
       </SelectionCount>
       <SectionLabel>MODEL CATALOG</SectionLabel>
       <CatalogGrid>
         {MODEL_CATALOG.map((model) => {
           const isSelected = selectedIds.includes(model.id);
           const agentState = agents.find((a) => a.id === model.id);
-          const isLocked = agentState != null && agentState.status !== 'idle';
+          const hasDeployments = (deployCountByModel[model.id] || 0) > 0;
+          const isLocked = hasDeployments || (agentState != null && agentState.status !== 'idle');
           const isDisabled = !isSelected && selectionFull;
 
           return (

@@ -130,6 +130,9 @@ export default function App() {
     skipModal,
     raceState,
     dismissRace,
+    deployments,
+    totalDeployed,
+    deployCountByModel,
     sectorCounts,
     totalDeployments,
     avgLatencyMs,
@@ -169,6 +172,7 @@ export default function App() {
         <EOSWheel
           svgRef={svgRef}
           agents={agents}
+          deployments={deployments}
           hoveredSector={hoveredSector}
           onSectorHover={setHoveredSector}
           sectorCounts={sectorCounts}
@@ -196,6 +200,8 @@ export default function App() {
         reset={reset}
         busy={busy}
         anyIdle={anyIdle}
+        deployCountByModel={deployCountByModel}
+        totalDeployed={totalDeployed}
       />
       <SectorTooltip sectorId={hoveredSector} x={mousePos.x} y={mousePos.y} />
 

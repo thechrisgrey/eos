@@ -6,12 +6,14 @@ import type {
   AgentId,
   FlyingNodeData,
   DecisionLogEntry,
+  DeploymentInstance,
   Turn1Response,
   Turn2Response,
   ModelEntry,
   InferenceModalState,
   InferenceStep,
   RaceEntry,
+  SectorId,
 } from '../types';
 import { svgPointToScreen } from './useSectorGeometry';
 import { useResultsStore } from './useResultsStore';
@@ -49,10 +51,13 @@ export function useAgentRouter() {
   const [temperature, setTemperature] = useState(0);
   const [inferenceModal, setInferenceModal] = useState<InferenceModalState | null>(null);
   const [raceState, setRaceState] = useState<Record<string, RaceEntry> | null>(null);
+  const [deployments, setDeployments] = useState<DeploymentInstance[]>([]);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const agentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const skippedRef = useRef(false);
+  const deploymentsRef = useRef<DeploymentInstance[]>([]);
+  deploymentsRef.current = deployments;
 
   const {
     sectorCounts,
@@ -67,6 +72,16 @@ export function useAgentRouter() {
   } = useResultsStore();
 
   const agents = selectedIds.map((id) => agentStates[id]).filter(Boolean);
+  const totalDeployed = deployments.length;
+
+  const occupiedSectors: SectorId[] = SECTORS
+    .filter((s) => deployments.filter((d) => d.sector === s.id).length >= 2)
+    .map((s) => s.id);
+
+  const deployCountByModel: Record<string, number> = {};
+  for (const d of deployments) {
+    deployCountByModel[d.modelId] = (deployCountByModel[d.modelId] || 0) + 1;
+  }
 
   const setAgentRef = useCallback(
     (id: string, el: HTMLDivElement | null) => {
@@ -80,6 +95,7 @@ export function useAgentRouter() {
       if (prev.includes(id)) {
         const state = agentStates[id];
         if (state && state.status !== 'idle') return prev;
+        if (deploymentsRef.current.some((d) => d.modelId === id)) return prev;
         return prev.filter((x) => x !== id);
       }
       if (prev.length >= 6) return prev;
@@ -182,6 +198,10 @@ export function useAgentRouter() {
       }
       opts?.onStepChange?.('turn2-sending', {});
 
+      const currentOccupied = SECTORS
+        .filter((s) => deploymentsRef.current.filter((d) => d.sector === s.id).length >= 2)
+        .map((s) => s.id);
+
       const res2 = await fetch(`${API_ENDPOINT}/api/route-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -189,6 +209,7 @@ export function useAgentRouter() {
           ...baseBody,
           turn: 2,
           turn1Response: turn1Data.turn1Response,
+          occupiedSectors: currentOccupied.length > 0 ? currentOccupied : undefined,
         }),
       });
 
@@ -275,9 +296,20 @@ export function useAgentRouter() {
 
       setTimeout(() => {
         setFlying((prev) => prev.filter((f) => f.id !== flyingNode.id));
+
+        const deployment: DeploymentInstance = {
+          id: `${id}-${Date.now()}`,
+          modelId: id,
+          model,
+          sector,
+          reason,
+          inference: inferenceResult,
+        };
+        setDeployments((prev) => [...prev, deployment]);
+
         setAgentStates((prev) => ({
           ...prev,
-          [id]: { ...prev[id], status: 'settled' },
+          [id]: { ...prev[id], status: 'idle', sector: null, reason: null, inference: null },
         }));
         setLog((prev) => [
           {
@@ -325,9 +357,11 @@ export function useAgentRouter() {
     if (busy) return;
     setBusy(true);
 
+    const remaining = 6 - deploymentsRef.current.length;
     const idleIds = agents
       .filter((a) => a.status === 'idle')
-      .map((a) => a.id);
+      .map((a) => a.id)
+      .slice(0, remaining);
 
     // Initialize race state
     const initialRace: Record<string, RaceEntry> = {};
@@ -374,9 +408,10 @@ export function useAgentRouter() {
     setBusy(false);
     setInferenceModal(null);
     setRaceState(null);
+    setDeployments([]);
   }, []);
 
-  const anyIdle = agents.some((a) => a.status === 'idle');
+  const anyIdle = totalDeployed < 6 && agents.some((a) => a.status === 'idle');
 
   return {
     agents,
@@ -398,6 +433,9 @@ export function useAgentRouter() {
     skipModal,
     raceState,
     dismissRace,
+    deployments,
+    totalDeployed,
+    deployCountByModel,
     sectorCounts,
     totalDeployments,
     avgLatencyMs,

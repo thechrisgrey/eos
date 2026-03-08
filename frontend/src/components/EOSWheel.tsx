@@ -1,6 +1,6 @@
 import React, { RefObject } from 'react';
 import styled from 'styled-components';
-import { AgentState, SectorId } from '../types';
+import { AgentState, DeploymentInstance, SectorId } from '../types';
 import { SECTORS } from '../data/sectors';
 import {
   makeSectorPath,
@@ -14,6 +14,7 @@ const { CX, CY, R1 } = SVG_CONSTANTS;
 interface EOSWheelProps {
   svgRef: RefObject<SVGSVGElement>;
   agents: AgentState[];
+  deployments: DeploymentInstance[];
   hoveredSector: SectorId | null;
   onSectorHover: (id: SectorId | null) => void;
   sectorCounts: Record<SectorId, number>;
@@ -29,16 +30,15 @@ const WheelSvg = styled.svg`
 const EOSWheel: React.FC<EOSWheelProps> = ({
   svgRef,
   agents,
+  deployments,
   hoveredSector,
   onSectorHover,
   sectorCounts,
 }) => {
   const maxCount = Math.max(1, ...Object.values(sectorCounts));
-  const settledBySector: Record<string, AgentState[]> = {};
-  agents.forEach((a) => {
-    if (a.status === 'settled' && a.sector) {
-      (settledBySector[a.sector] = settledBySector[a.sector] || []).push(a);
-    }
+  const deploymentsBySector: Record<string, DeploymentInstance[]> = {};
+  deployments.forEach((d) => {
+    (deploymentsBySector[d.sector] = deploymentsBySector[d.sector] || []).push(d);
   });
 
   return (
@@ -61,13 +61,13 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
       </defs>
 
       {SECTORS.map((sector) => {
-        const hasAgents = (settledBySector[sector.id] || []).length > 0;
+        const sectorDeps = deploymentsBySector[sector.id] || [];
+        const hasAgents = sectorDeps.length > 0;
         const isHovered = hoveredSector === sector.id;
         const fill =
           isHovered || hasAgents ? sector.color.hover : sector.color.base;
 
         const [lx, ly] = labelPosition(sector.centerAngle);
-        const sectorAgents = settledBySector[sector.id] || [];
 
         return (
           <g
@@ -147,26 +147,26 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
               </text>
             ))}
 
-            {sectorAgents.map((agent, index) => {
+            {sectorDeps.map((dep, index) => {
               const [bx, by] = badgePosition(
                 sector.centerAngle,
                 index,
-                sectorAgents.length,
+                sectorDeps.length,
               );
               return (
                 <g
-                  key={agent.id}
+                  key={dep.id}
                   style={{ animation: 'pop 0.45s ease both' }}
                 >
                   <circle
                     cx={bx}
                     cy={by}
                     r={11}
-                    fill={agent.color}
+                    fill={dep.model.color}
                     stroke="rgba(255,255,255,0.85)"
                     strokeWidth={1.5}
                     style={{
-                      filter: `drop-shadow(0 0 7px ${agent.color})`,
+                      filter: `drop-shadow(0 0 7px ${dep.model.color})`,
                     }}
                   />
                   <text
@@ -181,7 +181,7 @@ const EOSWheel: React.FC<EOSWheelProps> = ({
                       pointerEvents: 'none',
                     }}
                   >
-                    {agent.name[0]}
+                    {dep.model.name[0]}
                   </text>
                 </g>
               );

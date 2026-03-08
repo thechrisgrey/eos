@@ -44,6 +44,15 @@ export interface AgentState extends Agent {
   inference: AgentInferenceResult | null;
 }
 
+export interface DeploymentInstance {
+  id: string;
+  modelId: string;
+  model: ModelEntry;
+  sector: SectorId;
+  reason: string;
+  inference: AgentInferenceResult;
+}
+
 export interface RouteAgentRequest {
   agentId: string;
   agentName: string;
@@ -53,6 +62,7 @@ export interface RouteAgentRequest {
   temperature: number;
   turn?: 1 | 2;
   turn1Response?: string;
+  occupiedSectors?: string[];
 }
 
 export interface RouteAgentResponse {
