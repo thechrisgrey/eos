@@ -25,7 +25,9 @@ const STEP_PROGRESS: Record<InferenceStep, number> = {
   'turn1-received': 2,
   'turn2-sending': 3,
   'turn2-received': 4,
-  'routing': 5,
+  'turn3-sending': 5,
+  'turn3-received': 6,
+  'routing': 7,
   'error': -1,
 };
 
@@ -35,6 +37,8 @@ const STATUS_TEXT: Record<InferenceStep, string> = {
   'turn1-received': 'ANALYZING',
   'turn2-sending': 'TURN 2',
   'turn2-received': 'DECIDING',
+  'turn3-sending': 'TURN 3',
+  'turn3-received': 'RE-ROUTING',
   'routing': 'ROUTED',
   'error': 'ERROR',
 };
@@ -248,7 +252,7 @@ const RacePanel: React.FC<RacePanelProps> = ({ state, agents, onDismiss }) => {
           const isError = entry.step === 'error';
           const isDone = entry.step === 'routing';
 
-          const latency = (entry.turn1LatencyMs || 0) + (entry.turn2LatencyMs || 0);
+          const latency = (entry.turn1LatencyMs || 0) + (entry.turn2LatencyMs || 0) + (entry.turn3LatencyMs || 0);
           const latencyText = latency > 0 ? `${(latency / 1000).toFixed(1)}s` : '';
 
           let status = STATUS_TEXT[entry.step];
@@ -261,7 +265,7 @@ const RacePanel: React.FC<RacePanelProps> = ({ state, agents, onDismiss }) => {
               <ModelDot $color={agent.color}>{agent.name[0]}</ModelDot>
               <ModelName>{agent.name}</ModelName>
               <DotsWrap>
-                {[1, 2, 3, 4, 5].map((pos) => (
+                {[1, 2, 3, 4, 5, 6, 7].map((pos) => (
                   <StepDot
                     key={pos}
                     $state={dotState(progress, pos, isError)}

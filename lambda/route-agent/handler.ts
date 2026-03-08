@@ -21,8 +21,10 @@ interface RouteRequest {
   capability: string;
   modelId: string;
   temperature?: number;
-  turn?: 1 | 2;
+  turn?: 1 | 2 | 3;
   turn1Response?: string;
+  turn2Response?: string;
+  originalSector?: string;
   occupiedSectors?: string[];
 }
 
@@ -48,22 +50,10 @@ const TURN1_PROMPT = `The 6 EOS components and what they govern:
 
 Analyze each component. For each one, briefly assess how well your capabilities align with what it demands. Think step by step.`;
 
-const TURN2_PROMPT_BASE = `Based on your analysis above, commit to the single EOS component where you would have the greatest real-world impact.`;
+const TURN2_PROMPT = `Based on your analysis above, commit to the single EOS component where you would have the greatest real-world impact.
 
-const TURN2_PROMPT_JSON = `Respond ONLY with valid JSON. No markdown. No explanation. No preamble.
+Respond ONLY with valid JSON. No markdown. No explanation. No preamble.
 {"sector":"<one of the six ids above>","reason":"<one sentence>"}`;
-
-function buildTurn2Prompt(occupiedSectors?: string[]): string {
-  const occupied = (occupiedSectors ?? []).filter((s) => isSector(s));
-  if (occupied.length === 0) {
-    return `${TURN2_PROMPT_BASE}\n\n${TURN2_PROMPT_JSON}`;
-  }
-  if (occupied.length >= VALID_SECTORS.length) {
-    return `${TURN2_PROMPT_BASE}\n\nAll sectors are currently at capacity. Choose the sector where you would still add the most value.\n\n${TURN2_PROMPT_JSON}`;
-  }
-  const available = VALID_SECTORS.filter((s) => !occupied.includes(s));
-  return `${TURN2_PROMPT_BASE}\n\nIMPORTANT CONSTRAINT: The following sectors are FULL (2 agents already assigned) and CANNOT be chosen: ${occupied.join(", ")}.\nYou MUST choose from the remaining available sectors: ${available.join(", ")}.\n\n${TURN2_PROMPT_JSON}`;
-}
 
 function extractText(content: { text?: string; reasoningContent?: unknown }[] | undefined): string {
   if (!content) return "";
@@ -106,9 +96,8 @@ export async function handler(event: {
       typeof event.body === "string" ? event.body : JSON.stringify(event.body);
     const request: RouteRequest = JSON.parse(rawBody ?? "{}");
 
-    const { modelId, temperature: reqTemp, turn, turn1Response, occupiedSectors } = request;
+    const { modelId, temperature: reqTemp, turn, turn1Response } = request;
     const temperature = typeof reqTemp === "number" ? Math.max(0, Math.min(1, reqTemp)) : 0;
-    const turn2Prompt = buildTurn2Prompt(occupiedSectors);
 
     if (!modelId) {
       return jsonResponse(400, { error: "Missing required field: modelId" });
@@ -149,7 +138,7 @@ export async function handler(event: {
         messages: [
           { role: "user", content: [{ text: TURN1_PROMPT }] },
           { role: "assistant", content: [{ text: turn1Response }] },
-          { role: "user", content: [{ text: turn2Prompt }] },
+          { role: "user", content: [{ text: TURN2_PROMPT }] },
         ],
         system: [{ text: SYSTEM_PROMPT }],
         inferenceConfig: { maxTokens: 200, temperature },
@@ -172,10 +161,68 @@ export async function handler(event: {
       }
 
       return jsonResponse(200, {
-        turn2Prompt: turn2Prompt,
+        turn2Prompt: TURN2_PROMPT,
         turn2Response: turn2Text,
         sector: parsed.sector,
         reason: parsed.reason ?? "No reason provided",
+        latencyMs: Date.now() - startMs,
+      });
+    }
+
+    // ── Turn 3: constrained re-evaluation ──
+    if (turn === 3) {
+      if (!turn1Response || !request.turn2Response) {
+        return jsonResponse(400, { error: "Missing turn1Response or turn2Response for turn 3" });
+      }
+
+      const occupied = (request.occupiedSectors ?? []).filter((s) => isSector(s));
+      const available = VALID_SECTORS.filter((s) => !occupied.includes(s));
+      const orig = request.originalSector ?? "unknown";
+
+      const turn3Prompt = `Your first choice was "${orig}", but that sector is currently at capacity (2 agents already assigned).
+
+Available sectors: ${available.join(", ")}.
+
+Re-evaluate your analysis above. Among the remaining available sectors, which one would you have the greatest real-world impact in?
+
+Respond ONLY with valid JSON. No markdown. No explanation. No preamble.
+{"sector":"<one of: ${available.join(", ")}>","reason":"<one sentence explaining your adapted choice>"}`;
+
+      const startMs = Date.now();
+      const turn3 = await client.send(new ConverseCommand({
+        modelId,
+        messages: [
+          { role: "user", content: [{ text: TURN1_PROMPT }] },
+          { role: "assistant", content: [{ text: turn1Response }] },
+          { role: "user", content: [{ text: TURN2_PROMPT }] },
+          { role: "assistant", content: [{ text: request.turn2Response }] },
+          { role: "user", content: [{ text: turn3Prompt }] },
+        ],
+        system: [{ text: SYSTEM_PROMPT }],
+        inferenceConfig: { maxTokens: 200, temperature },
+      }));
+
+      const turn3Text = extractText(turn3.output?.message?.content as { text?: string; reasoningContent?: unknown }[] | undefined);
+      const cleaned3 = stripMarkdownFences(turn3Text);
+
+      let parsed3: { sector?: string; reason?: string };
+      try {
+        parsed3 = JSON.parse(cleaned3);
+      } catch {
+        return jsonResponse(400, { error: `Failed to parse turn 3 response as JSON: ${cleaned3}` });
+      }
+
+      if (parsed3.sector) parsed3.sector = parsed3.sector.toLowerCase();
+
+      if (!parsed3.sector || !isSector(parsed3.sector)) {
+        return jsonResponse(400, { error: `Invalid sector "${parsed3.sector}". Must be one of: ${VALID_SECTORS.join(", ")}` });
+      }
+
+      return jsonResponse(200, {
+        turn3Prompt,
+        turn3Response: turn3Text,
+        sector: parsed3.sector,
+        reason: parsed3.reason ?? "No reason provided",
         latencyMs: Date.now() - startMs,
       });
     }
@@ -200,7 +247,7 @@ export async function handler(event: {
       messages: [
         { role: "user", content: [{ text: TURN1_PROMPT }] },
         { role: "assistant", content: [{ text: turn1Text }] },
-        { role: "user", content: [{ text: turn2Prompt }] },
+        { role: "user", content: [{ text: TURN2_PROMPT }] },
       ],
       system: [{ text: SYSTEM_PROMPT }],
       inferenceConfig: { maxTokens: 200, temperature },
@@ -227,7 +274,7 @@ export async function handler(event: {
       systemPrompt: SYSTEM_PROMPT,
       turn1Prompt: TURN1_PROMPT,
       turn1Response: turn1Text,
-      turn2Prompt: turn2Prompt,
+      turn2Prompt: TURN2_PROMPT,
       turn2Response: turn2Text,
       temperature,
       latencyMs,

@@ -9,6 +9,7 @@ import type {
   DeploymentInstance,
   Turn1Response,
   Turn2Response,
+  Turn3Response,
   ModelEntry,
   InferenceModalState,
   InferenceStep,
@@ -198,10 +199,6 @@ export function useAgentRouter() {
       }
       opts?.onStepChange?.('turn2-sending', {});
 
-      const currentOccupied = SECTORS
-        .filter((s) => deploymentsRef.current.filter((d) => d.sector === s.id).length >= 2)
-        .map((s) => s.id);
-
       const res2 = await fetch(`${API_ENDPOINT}/api/route-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,7 +206,6 @@ export function useAgentRouter() {
           ...baseBody,
           turn: 2,
           turn1Response: turn1Data.turn1Response,
-          occupiedSectors: currentOccupied.length > 0 ? currentOccupied : undefined,
         }),
       });
 
@@ -237,18 +233,91 @@ export function useAgentRouter() {
         } : prev);
 
         await new Promise((r) => setTimeout(r, 800));
-
-        setInferenceModal((prev) => prev && prev.agentId === id ? {
-          ...prev,
-          step: 'routing',
-          sector: turn2Data.sector,
-          reason: turn2Data.reason,
-        } : prev);
       }
       opts?.onStepChange?.('turn2-received', { turn2LatencyMs: turn2Data.latencyMs });
 
-      const { sector, reason } = turn2Data;
-      const totalLatencyMs = turn1Data.latencyMs + turn2Data.latencyMs;
+      // ── Check if Turn 2 sector is occupied → Turn 3 ──
+      const currentOccupied = SECTORS
+        .filter((s) => deploymentsRef.current.filter((d) => d.sector === s.id).length >= 2)
+        .map((s) => s.id);
+
+      let sector = turn2Data.sector;
+      let reason = turn2Data.reason;
+      let totalLatencyMs = turn1Data.latencyMs + turn2Data.latencyMs;
+      let turn3Prompt: string | undefined;
+      let turn3Response: string | undefined;
+      let turn3LatencyMs: number | undefined;
+
+      if (currentOccupied.includes(turn2Data.sector)) {
+        // Sector is full — fire Turn 3
+        if (showModal && !skippedRef.current) {
+          setInferenceModal((prev) => prev && prev.agentId === id ? {
+            ...prev,
+            step: 'turn3-sending',
+            originalSector: turn2Data.sector,
+          } : prev);
+        }
+        opts?.onStepChange?.('turn3-sending', {});
+
+        const res3 = await fetch(`${API_ENDPOINT}/api/route-agent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...baseBody,
+            turn: 3,
+            turn1Response: turn1Data.turn1Response,
+            turn2Response: turn2Data.turn2Response,
+            originalSector: turn2Data.sector,
+            occupiedSectors: currentOccupied,
+          }),
+        });
+
+        if (!res3.ok) {
+          const errData = await res3.json().catch(() => ({ error: `API error: ${res3.status}` }));
+          throw new Error(errData.error || `API error: ${res3.status}`);
+        }
+
+        const turn3Data: Turn3Response = await res3.json();
+
+        if (showModal && !skippedRef.current) {
+          setInferenceModal((prev) => prev && prev.agentId === id ? {
+            ...prev,
+            step: 'turn3-sending',
+            turn3Prompt: turn3Data.turn3Prompt,
+          } : prev);
+
+          await new Promise((r) => setTimeout(r, 300));
+
+          setInferenceModal((prev) => prev && prev.agentId === id ? {
+            ...prev,
+            step: 'turn3-received',
+            turn3Response: turn3Data.turn3Response,
+            turn3LatencyMs: turn3Data.latencyMs,
+          } : prev);
+
+          await new Promise((r) => setTimeout(r, 800));
+        }
+        opts?.onStepChange?.('turn3-received', { turn3LatencyMs: turn3Data.latencyMs });
+
+        sector = turn3Data.sector;
+        reason = turn3Data.reason;
+        totalLatencyMs += turn3Data.latencyMs;
+        turn3Prompt = turn3Data.turn3Prompt;
+        turn3Response = turn3Data.turn3Response;
+        turn3LatencyMs = turn3Data.latencyMs;
+      }
+
+      // ── Final routing ──
+      if (showModal && !skippedRef.current) {
+        setInferenceModal((prev) => prev && prev.agentId === id ? {
+          ...prev,
+          step: 'routing',
+          sector,
+          reason,
+        } : prev);
+      }
+      opts?.onStepChange?.('routing', { sector });
+
       const inferenceResult = {
         systemPrompt: turn1Data.systemPrompt,
         turn1Prompt: turn1Data.turn1Prompt,
@@ -258,8 +327,6 @@ export function useAgentRouter() {
         temperature: turn1Data.temperature,
         latencyMs: totalLatencyMs,
       };
-
-      opts?.onStepChange?.('routing', { sector });
 
       // ── Animate flying node ──
       const sectorDef = SECTORS.find((s) => s.id === sector);

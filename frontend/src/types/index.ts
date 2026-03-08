@@ -93,6 +93,14 @@ export interface Turn2Response {
   latencyMs: number;
 }
 
+export interface Turn3Response {
+  turn3Prompt: string;
+  turn3Response: string;
+  sector: SectorId;
+  reason: string;
+  latencyMs: number;
+}
+
 export interface RouteAgentError {
   error: string;
 }
@@ -103,6 +111,8 @@ export type InferenceStep =
   | 'turn1-received'
   | 'turn2-sending'
   | 'turn2-received'
+  | 'turn3-sending'
+  | 'turn3-received'
   | 'routing'
   | 'error';
 
@@ -115,11 +125,15 @@ export interface InferenceModalState {
   turn1Response?: string;
   turn2Prompt?: string;
   turn2Response?: string;
+  turn3Prompt?: string;
+  turn3Response?: string;
+  originalSector?: SectorId;
   sector?: SectorId;
   reason?: string;
   error?: string;
   turn1LatencyMs?: number;
   turn2LatencyMs?: number;
+  turn3LatencyMs?: number;
 }
 
 export interface DecisionLogEntry {
@@ -145,6 +159,7 @@ export interface RaceEntry {
   step: InferenceStep;
   turn1LatencyMs?: number;
   turn2LatencyMs?: number;
+  turn3LatencyMs?: number;
   sector?: SectorId;
   error?: string;
 }

@@ -143,7 +143,7 @@ const ScrollArea = styled.div`
 
 /* ── Steps ── */
 
-const STEP_ORDER: InferenceStep[] = [
+const STEP_ORDER_BASE: InferenceStep[] = [
   'init',
   'turn1-sending',
   'turn1-received',
@@ -152,8 +152,27 @@ const STEP_ORDER: InferenceStep[] = [
   'routing',
 ];
 
-function stepIndex(step: InferenceStep): number {
-  const idx = STEP_ORDER.indexOf(step);
+const STEP_ORDER_TURN3: InferenceStep[] = [
+  'init',
+  'turn1-sending',
+  'turn1-received',
+  'turn2-sending',
+  'turn2-received',
+  'turn3-sending',
+  'turn3-received',
+  'routing',
+];
+
+function getStepOrder(state: InferenceModalState): InferenceStep[] {
+  const hasTurn3 = state.turn3Prompt != null
+    || state.originalSector != null
+    || state.step === 'turn3-sending'
+    || state.step === 'turn3-received';
+  return hasTurn3 ? STEP_ORDER_TURN3 : STEP_ORDER_BASE;
+}
+
+function stepIndex(step: InferenceStep, order: InferenceStep[]): number {
+  const idx = order.indexOf(step);
   return idx >= 0 ? idx : -1;
 }
 
@@ -341,6 +360,33 @@ const ReasonText = styled.div`
   font-family: ${theme.fontMono};
 `;
 
+const RejectedBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  margin-bottom: 8px;
+  animation: ${textReveal} 0.3s ease-out;
+`;
+
+const RejectedSector = styled.span`
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  font-family: ${theme.fontMono};
+  color: #fca5a5;
+`;
+
+const RejectedLabel = styled.span`
+  font-size: 8px;
+  letter-spacing: 1px;
+  font-family: ${theme.fontMono};
+  color: ${theme.textDim};
+`;
+
 const ErrorBox = styled.div`
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.25);
@@ -354,14 +400,16 @@ const ErrorBox = styled.div`
 
 const InferenceModal: React.FC<InferenceModalProps> = ({ state, onSkip }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const currentStep = stepIndex(state.step);
+  const order = getStepOrder(state);
+  const currentStep = stepIndex(state.step, order);
   const isError = state.step === 'error';
+  const hasTurn3 = order === STEP_ORDER_TURN3;
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [state.step, state.turn1Response, state.turn2Response]);
+  }, [state.step, state.turn1Response, state.turn2Response, state.turn3Response]);
 
   function getIndicatorState(idx: number): 'pending' | 'active' | 'done' | 'error' {
     if (isError && idx === currentStep) return 'error';
@@ -493,10 +541,75 @@ const InferenceModal: React.FC<InferenceModalProps> = ({ state, onSkip }) => {
           </StepRow>
         )}
 
-        {/* Step 5: Routing result */}
-        {currentStep >= 5 && state.sector && (
+        {/* Turn 3: Constrained re-evaluation (conditional) */}
+        {hasTurn3 && currentStep >= stepIndex('turn3-sending', order) && (
+          <>
+            {/* Original sector rejected */}
+            {state.originalSector && (
+              <StepRow>
+                <StepIndicator $state="error" $color={state.agent.color} />
+                <StepConnector $visible />
+                <StepLabel $active>SECTOR AT CAPACITY</StepLabel>
+                <RejectedBadge>
+                  <RejectedSector>{state.originalSector.toUpperCase()}</RejectedSector>
+                  <RejectedLabel>FULL -- RE-EVALUATING</RejectedLabel>
+                </RejectedBadge>
+              </StepRow>
+            )}
+
+            {/* Turn 3 prompt + response */}
+            <StepRow>
+              <StepIndicator
+                $state={getIndicatorState(stepIndex('turn3-sending', order))}
+                $color={state.agent.color}
+              >
+                {getIndicatorState(stepIndex('turn3-sending', order)) === 'done' && '\u2713'}
+              </StepIndicator>
+              <StepConnector $visible />
+              <StepLabel $active>
+                TURN 3 -- RE-EVALUATION
+                {state.turn3LatencyMs != null && (
+                  <LatencyTag>{(state.turn3LatencyMs / 1000).toFixed(1)}s</LatencyTag>
+                )}
+              </StepLabel>
+              {state.turn3Prompt && (
+                <ContentBlock>
+                  <PromptBox>
+                    <PromptLabel>CONSTRAINT PROMPT</PromptLabel>
+                    <PromptText>{state.turn3Prompt}</PromptText>
+                  </PromptBox>
+                </ContentBlock>
+              )}
+              {currentStep === stepIndex('turn3-sending', order) && !state.turn3Response && (
+                <Spinner $color={state.agent.color} />
+              )}
+            </StepRow>
+
+            {/* Turn 3 response */}
+            {currentStep >= stepIndex('turn3-received', order) && state.turn3Response && (
+              <StepRow>
+                <StepIndicator
+                  $state={getIndicatorState(stepIndex('turn3-received', order))}
+                  $color={state.agent.color}
+                >
+                  {getIndicatorState(stepIndex('turn3-received', order)) === 'done' && '\u2713'}
+                </StepIndicator>
+                <StepConnector $visible />
+                <StepLabel $active>RESPONSE</StepLabel>
+                <ContentBlock>
+                  <ResponseBox $color={state.agent.color}>
+                    <ResponseText>{state.turn3Response}</ResponseText>
+                  </ResponseBox>
+                </ContentBlock>
+              </StepRow>
+            )}
+          </>
+        )}
+
+        {/* Routing result */}
+        {currentStep >= stepIndex('routing', order) && state.sector && (
           <StepRow>
-            <StepIndicator $state={getIndicatorState(5)} $color={state.agent.color}>
+            <StepIndicator $state={getIndicatorState(stepIndex('routing', order))} $color={state.agent.color}>
               {'\u2713'}
             </StepIndicator>
             <StepConnector $visible={false} />
