@@ -108,6 +108,7 @@ const MainLayout = styled.div`
 
 export default function App() {
   const [hoveredSector, setHoveredSector] = useState<SectorId | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [selectedAgent, setSelectedAgent] = useState<AgentId | null>(null);
   const {
     agents,
@@ -140,7 +141,7 @@ export default function App() {
   } = useAgentRouter();
 
   return (
-    <PageContainer>
+    <PageContainer onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}>
       <WelcomeModal />
       <AmbientGradient />
       <DotGrid />
@@ -196,7 +197,7 @@ export default function App() {
         busy={busy}
         anyIdle={anyIdle}
       />
-      <SectorTooltip sectorId={hoveredSector} />
+      <SectorTooltip sectorId={hoveredSector} x={mousePos.x} y={mousePos.y} />
 
       {flying.map((n) => (
         <FlyingNode key={n.id} node={n} />

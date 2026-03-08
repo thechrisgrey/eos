@@ -6,12 +6,14 @@ import { theme } from '../styles/theme';
 
 interface SectorTooltipProps {
   sectorId: SectorId | null;
+  x: number;
+  y: number;
 }
 
-const Tooltip = styled.div`
+const Tooltip = styled.div<{ $x: number; $y: number }>`
   position: fixed;
-  bottom: 24px;
-  left: 50%;
+  top: ${(p) => p.$y + 16}px;
+  left: ${(p) => p.$x}px;
   transform: translateX(-50%);
   background: rgba(6, 6, 10, 0.95);
   border: 1px solid rgba(234, 88, 12, 0.18);
@@ -40,14 +42,14 @@ const SectorName = styled.span`
   font-family: ${theme.fontMono};
 `;
 
-const SectorTooltip: React.FC<SectorTooltipProps> = ({ sectorId }) => {
+const SectorTooltip: React.FC<SectorTooltipProps> = ({ sectorId, x, y }) => {
   if (!sectorId) return null;
 
   const sector = SECTORS.find((s) => s.id === sectorId);
   if (!sector) return null;
 
   return (
-    <Tooltip>
+    <Tooltip $x={x} $y={y}>
       <SectorName>{sectorId.toUpperCase()}</SectorName>
       {sector.description}
     </Tooltip>
