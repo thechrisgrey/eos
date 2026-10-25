@@ -8,6 +8,7 @@ Interactive experiment: deploy AI foundation models and watch them self-route in
 - **Backend**: Lambda (Node.js 20, ARM64) behind HTTP API Gateway, proxying to Amazon Bedrock Converse API
 - **IaC**: AWS CDK (TypeScript) in `infra/`
 - **Region**: Lambda + API Gateway in `us-east-1`, Amplify in `us-east-2`
+- **AWS account**: the CDK stack lives in the Altivum account (profile `altivum-og`). The repo is public, so the id is not committed: `infra/bin/app.ts` reads it from `EOS_AWS_ACCOUNT` or, failing that, from a gitignored `.aws-account` file at the repo root (one line, the 12-digit id), and refuses to synth with neither. A deploy with any other account's credentials then fails instead of creating a second stack
 
 ## Key Files
 
@@ -27,7 +28,7 @@ cd frontend && npm run dev      # Dev server on :3000
 cd frontend && npm run build    # tsc + vite build
 
 # Infrastructure
-cd infra && npx cdk deploy      # Deploy Lambda + API Gateway
+cd infra && npx cdk deploy --profile altivum-og   # Deploy Lambda + API Gateway (Altivum)
 
 # Monorepo
 npm install                     # Install all workspaces
@@ -55,7 +56,7 @@ The Lambda supports three modes via the `turn` field:
 
 ## Gotchas
 
-- AWS Marketplace models (some Anthropic, Cohere, AI21, Writer) require payment instruments — use `aws bedrock get-foundation-model-availability` to check before adding models
+- AWS Marketplace models (some Anthropic, Cohere, AI21, Writer) require payment instruments — use `aws bedrock get-foundation-model-availability --profile altivum-og --region us-east-1` to check before adding models
 - SVG OG images don't work on most social platforms — use PNG
 - The `capability` field is sent to the API but NOT injected into prompts — models self-route on generic self-knowledge only
 - Temperature is clamped to [0, 1] on the backend regardless of frontend value
