@@ -7,3 +7,5 @@ cdk.out/
 *.tsbuildinfo
 !vite.config.ts
 .vite/
+# Local AWS account id for the deploy pin (see infra/bin/app.ts). Never commit it.
+.aws-account
